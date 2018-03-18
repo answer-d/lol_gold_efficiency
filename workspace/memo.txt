@@ -1,12 +1,12 @@
-# riotwatcher�̏�����
+# riotwatcherの初期化
 from riotwatcher import RiotWatcher
 watcher = RiotWatcher('RGAPI-a0ef2c80-a0eb-4b4f-a682-d6762f5648a0')
 my_region = 'jp1'
 
-# �A�C�e���ꗗ�̎擾�i�S�^�O�j
+# アイテム一覧の取得（全タグ）
 items = watcher.static_data.items(my_region, locale="ja_JP", tags=['all',])
 
-# �t�@�C�������o��
+# ファイル書き出し
 import json
 import codecs
 items_json = json.dumps(items, ensure_ascii=False)
@@ -14,7 +14,7 @@ f = codecs.open('./workspace/items.json', 'w', 'utf-8')
 f.write(items_json)
 f.close()
 
-# stats�̃L�[�̏W�����擾
+# statsのキーの集合を取得
 stats_set = set()
 for v in items['data'].values():
     for vkey in v['stats'].keys():
@@ -35,4 +35,33 @@ stats_set
  'PercentLifeStealMod',
  'PercentMovementSpeedMod'}
 
-
+items['data']['3916']
+=>
+{'depth': 2,
+ 'description': "<stats>魔力 +25<br>体力 +200</stats><br><br><unique>自動効果(重複不可) - 死の接触:</unique> <a href='FlatMagicPen'>魔法防御貫通</a> +15",
+ 'effect': {'Effect1Amount': '15'},
+ 'from': ['1028', '1052'],
+ 'gold': {'base': 665, 'purchasable': True, 'sell': 1050, 'total': 1500},
+ 'id': 3916,
+ 'image': {'full': '3916.png',
+  'group': 'item',
+  'h': 48,
+  'sprite': 'item2.png',
+  'w': 48,
+  'x': 48,
+  'y': 384},
+ 'into': ['3165'],
+ 'maps': {'10': True,
+  '11': True,
+  '12': True,
+  '14': True,
+  '16': False,
+  '18': True,
+  '19': True,
+  '8': True},
+ 'name': '忘却のオーブ',
+ 'plaintext': '魔法ダメージが上昇',
+ 'sanitizedDescription': '魔力 +25 体力 +200 自動効果(重複不可) - 死の接触: 魔法防御貫通 +15',
+ 'stacks': 0,
+ 'stats': {'FlatHPPoolMod': 200.0, 'FlatMagicDamageMod': 25.0},
+ 'tags': ['Health', 'MagicPenetration', 'SpellDamage']}
