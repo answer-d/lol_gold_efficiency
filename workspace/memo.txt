@@ -1,0 +1,38 @@
+# riotwatcherの初期化
+from riotwatcher import RiotWatcher
+watcher = RiotWatcher('RGAPI-a0ef2c80-a0eb-4b4f-a682-d6762f5648a0')
+my_region = 'jp1'
+
+# アイテム一覧の取得（全タグ）
+items = watcher.static_data.items(my_region, locale="ja_JP", tags=['all',])
+
+# ファイル書き出し
+import json
+import codecs
+items_json = json.dumps(items, ensure_ascii=False)
+f = codecs.open('./workspace/items.json', 'w', 'utf-8')
+f.write(items_json)
+f.close()
+
+# statsのキーの集合を取得
+stats_set = set()
+for v in items['data'].values():
+    for vkey in v['stats'].keys():
+        stats_set.add(vkey)
+
+stats_set
+=>
+{'FlatArmorMod',
+ 'FlatCritChanceMod',
+ 'FlatHPPoolMod',
+ 'FlatHPRegenMod',
+ 'FlatMPPoolMod',
+ 'FlatMagicDamageMod',
+ 'FlatMovementSpeedMod',
+ 'FlatPhysicalDamageMod',
+ 'FlatSpellBlockMod',
+ 'PercentAttackSpeedMod',
+ 'PercentLifeStealMod',
+ 'PercentMovementSpeedMod'}
+
+
