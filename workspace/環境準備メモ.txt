@@ -1,0 +1,21 @@
+■ あんでぃー環境
+# python --version
+Python 3.6.4
+# python -c "import django; print(django.get_version())"
+2.0.3
+
+■ 環境準備方法
+# 仮想環境構築
+python -m venv <仮想環境パス>
+<仮想環境パス>/Scripts/activate
+
+# モジュールインストール
+pip install django riotwatcher
+
+# DB初期化(sqlite.dbが作成される)
+python manage.py migrate
+
+# サーバ起動
+python manage.py runserver
+
+

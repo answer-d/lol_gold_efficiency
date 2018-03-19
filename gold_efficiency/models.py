@@ -5,9 +5,10 @@ from django.db import models
 
 class Item(models.Model):
     """アイテムのモデル"""
-    id = models.PositiveIntegerField(primary_key=True)
+    # id = models.PositiveIntegerField(primary_key=True)
+    riot_item_id = models.PositiveIntegerField()
     name = models.CharField()
-    description = models.TextField()
+    # description = models.TextField()
     # gold_json = models.CharField()
     gold_base = models.PositiveIntegerField()
     gold_purchasable = models.BooleanField()
@@ -22,21 +23,28 @@ class Item(models.Model):
     image_json = models.CharField()
     maps_json = models.CharField()
     tags_json = models.CharField()
+    version = models.CharField()
 
     def __str__(self):
         return self.name
 
 
-class ItemRelation(models.Model):
-    """アイテムの関連付けモデル"""
-    from_item = models.ForeignKey(Item)
-    to_item = models.ForeignKey(Item)
+class Stats(models.Model):
+    """金銭価値のベース(1ADあたり○○Gとかそういう感じ)"""
+    name = models.CharField()
+    gold_value_base = models.FloatField()
 
 
-class StatsGoldValue(models.Model):
-    """ステータスと金銭価値の紐づけモデル"""
-    item = models.ForeignKey(Item)
-    stats_name = models.CharField()
-    stats_value = models.FloatField()
+class ItemStats(models.Model):
+    """ItemとStatsの紐づけモデル"""
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    stats = models.ForeignKey(Stats, on_delete=models.CASCADE)
+    stats_amount = models.FloatField()
+
+
+class PassiveGoldValue(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    description = models.CharField()
     gold_value = models.FloatField()
+
 
