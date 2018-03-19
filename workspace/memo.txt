@@ -1,6 +1,6 @@
 # riotwatcherの初期化
 from riotwatcher import RiotWatcher
-watcher = RiotWatcher('RGAPI-a0ef2c80-a0eb-4b4f-a682-d6762f5648a0')
+watcher = RiotWatcher('RGAPI-1c9fdb99-5295-461a-b1e3-45aeddc99ee3')
 my_region = 'jp1'
 
 # アイテム一覧の取得（全タグ）
@@ -65,3 +65,112 @@ items['data']['3916']
  'stacks': 0,
  'stats': {'FlatHPPoolMod': 200.0, 'FlatMagicDamageMod': 25.0},
  'tags': ['Health', 'MagicPenetration', 'SpellDamage']}
+
+items['data']['3078']
+=>
+{'colloq': 'Trinity Force;triforce;tons of damage;ちゅりにてぃ;チュリニティ;TF;てぃーえふ;ティーエフ;とりにてぃ;ふぉーす;トリニティ・フォース;torinitexifo-su;torinitelifo-su;toriniteifuosu;toriniteihuosu',
+ 'depth': 3,
+ 'description': '<stats>体力 +250<br><mana>マナ +250 </mana><br>攻撃力 +25<br>攻撃速度 +40%<br>クールダウン短縮 +20%<br>移動速度 +5%</stats><br><br><unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃をすると移動速度が20増加する。効果は2秒 間。キルすると移動速度が60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。<br><unique>自動効果(重複不可) - 追撃: </unique>スキル使用後、次の通常攻撃の命中時に基本攻撃力の200%に等しい追加物理ダメージを与える (クールダウン1.5 秒)。',
+ 'effect': {'Effect1Amount': '20',
+  'Effect2Amount': '60',
+  'Effect3Amount': '2',
+  'Effect4Amount': '2',
+  'Effect5Amount': '1.5'},
+ 'from': ['3101', '3057', '3044'],
+ 'gold': {'base': 333, 'purchasable': True, 'sell': 2613, 'total': 3733},
+ 'id': 3078,
+ 'image': {'full': '3078.png',
+  'group': 'item',
+  'h': 48,
+  'sprite': 'item1.png',
+  'w': 48,
+  'x': 0,
+  'y': 96},
+ 'into': ['3384'],
+ 'maps': {'10': True,
+  '11': True,
+  '12': True,
+  '14': True,
+  '16': False,
+  '18': True,
+  '19': True,
+  '8': True},
+ 'name': 'トリニティ・フォース',
+ 'plaintext': '圧倒的ダメージ',
+ 'sanitizedDescription': '体力 +250 マナ +250 攻撃力 +25 攻撃速度 +40% クールダウン短縮 +20% 移動速度 +5% 自動効果(重複 不可) - 疾駆: 通常攻撃をすると移動速度が20増加する。効果は2秒間。キルすると移動速度が60増加する。遠隔チャンピオンの場合 、この増加移動速度は半分になる。 自動効果(重複不可) - 追撃: スキル使用後、次の通常攻撃の命中時に基本攻撃力の200%に等しい追加物理ダメージを与える (クールダウン1.5秒)。',
+ 'stats': {'FlatHPPoolMod': 250.0,
+  'FlatMPPoolMod': 250.0,
+  'FlatPhysicalDamageMod': 25.0,
+  'PercentAttackSpeedMod': 0.4,
+  'PercentMovementSpeedMod': 0.05},
+ 'tags': ['Health',
+  'Damage',
+  'AttackSpeed',
+  'Mana',
+  'CooldownReduction',
+  'OnHit',
+  'NonbootsMovement']}
+
+# tagsが入ってないアイテム一覧
+for v in items['data'].values():
+    if 'tags' not in v.keys():
+        print(v['name'])
+=>
+フラッシュ・ゾーン
+壊れたストップウォッチ
+壊れたストップウォッチ
+シージ・テレポート
+シージ・バリスタ
+シージ・テレポート
+タワー: 破壊ビーム
+テレポートパッド
+タワー: ファイアストームの防壁
+ネクサスシージ: シージスペルスロット
+シージ・サイトワーダー
+ヴァンガードの旗
+シージ・リファンド
+エントロピーフィールド
+シールド・トーテム
+シージ・テレポート(休止状態)
+エンチャント: ウォリアー
+エンチャント: シンダーハルク
+エンチャント: ルーンエコー
+プロトタイプ・ヘクスコア
+エンチャント: ブラッドレイザー
+コズミックシャックル
+シンギュラリティランタン
+ダークマターサイス
+グラビティブーツ
+スタークローク
+ダークスターシジル
+奪った栄養満点ビスケット
+英気満点ビスケット
+栄養満点ビスケット
+死の女神
+士気上昇
+乱れ撃ち
+ポロのヘルシーおやつ
+ポロのおやつ
+エンチャント: ルーンエコー
+エンチャント: シンダーハルク
+エンチャント: ウォリアー
+エンチャント: ルーンエコー
+エンチャント: シンダーハルク
+エンチャント: ウォリアー
+エンチャント: ブラッドレイザー
+エンチャント: ブラッドレイザー
+ミニオン吸収装置
+
+# tagsの集合
+tags_set = set()
+for v in items['data'].values():
+    if 'tags' in v.keys():
+        for i in v['tags']:
+            tags_set.add(i)
+print(tags_set)
+=>
+{'GoldPer', 'Damage', 'Health', 'Stealth', 'Consumable', 'Mana', 'Slow', 'NonbootsMovement',
+'MagicPenetration', 'Armor', 'Tenacity', 'Boots', 'ArmorPenetration', 'Trinket', 'Aura',
+'SpellDamage', 'Vision', 'Jungle', 'LifeSteal', 'Active', 'HealthRegen', 'AttackSpeed',
+'Bilgewater', 'OnHit', 'SpellVamp', 'SpellBlock', 'CooldownReduction', 'Lane', 'CriticalStrike',
+'ManaRegen'}
