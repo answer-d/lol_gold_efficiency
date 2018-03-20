@@ -12,10 +12,12 @@ python -m venv <仮想環境パス>
 # モジュールインストール
 pip install django riotwatcher
 
-# DB初期化(sqlite.dbが作成される)
+# DB作成(sqlite.dbが作成される)
+python manage.py makemigrations
 python manage.py migrate
 
-# サーバ起動
+# サンプルデータインポート
+python manage.py loaddata fixtures/sample.json
+
+# サーバ起動(admin/P@ssw0rd)
 python manage.py runserver
-
-
