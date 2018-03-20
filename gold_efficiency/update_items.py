@@ -1,6 +1,6 @@
 import json
 from riotwatcher import RiotWatcher
-from .models import PatchVersion, Item, StatsMaster, Stats, Effect, TagMaster, Tag
+from .models import PatchVersion, Item, Stats, Effect, TagMaster, Tag
 
 
 # やりたいこと

@@ -301,3 +301,11 @@ for v in items['data'].values():
 3184 ガーディアンハンマー
 2403 ミニオン吸収装置
 2419 始まりのストップウォッチ
+
+# descriptionのパース
+for v in items['data'].values():
+    if 'description' not in v.keys():
+        print('null description @ {0} {1}'.format(v['id'], v['name']))
+    else:
+        with codecs.open('./workspace/description.json', 'a', 'utf-8') as f:
+            f.write(v['description'] + "\n")
