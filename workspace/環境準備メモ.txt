@@ -4,6 +4,7 @@ Python 3.6.4
 # python -c "import django; print(django.get_version())"
 2.0.3
 
+
 ■ 環境準備方法
 # 仮想環境構築
 python -m venv <仮想環境パス>
@@ -17,7 +18,94 @@ python manage.py makemigrations
 python manage.py migrate
 
 # サンプルデータインポート
-python manage.py loaddata fixtures/sample.json
+python manage.py loaddata fixtures/sample_trinity.json
 
 # サーバ起動(admin/P@ssw0rd)
 python manage.py runserver
+
+# http://127.0.0.1/ にアクセス！
+# admin画面はhttp://127.0.0.1/（admin/P@ssw0rd で入れる）
+
+
+■ (あんでぃー用)サンプルデータ作成
+import json
+import codecs
+from gold_efficiency.models import *
+with codecs.open('./workspace/items.json', 'r', 'utf-8') as f:
+    items = json.load(f)
+
+patch_version = PatchVersion.objects.create(version_str=items['version'])
+
+itemlist = ['3078', '3101', '3057', '3044', '1027', '1028', '1036', '3384', '1042']
+
+for item_id in itemlist:
+    i = items['data'][item_id]
+    item_record = Item(
+        name=i['name'],
+        riot_item_id=item_id,
+        base_cost=i['gold']['base'],
+        total_cost=i['gold']['total'],
+        is_purchasable=i['gold']['purchasable'],
+        sell_gold=i['gold']['sell'],
+        image_json=i['image'],
+        from_item_str=[x for x in i['from'] if x in itemlist] if 'from' in i.keys() else None,
+        into_item_str=[x for x in i['into'] if x in itemlist] if 'into' in i.keys() else None,
+        depth=i['depth'] if 'depth' in i.keys() else None,
+        patch_version=patch_version
+    )
+    #print(item_record)
+    item_record.save()
+
+    for tag in i['tags']:
+        tag_record = Tag(
+            name = tag,
+            item = item_record
+        )
+        #print(tag_record)
+        tag_record.save()
+
+for item_id in itemlist:
+    print("{0} {1}\n{2}\n".format(
+        item_id, items['data'][item_id]['name'],
+        items['data'][item_id]['description']))
+
+Stats.objects.create(name='Health', amount=250, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+Stats.objects.create(name='Mana', amount=250, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+Stats.objects.create(name='AttackDamage', amount=25, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+Stats.objects.create(name='AttackSpeed', amount=40, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+Stats.objects.create(name='CooldownReduction', amount=20, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+Stats.objects.create(name='PercentMovementSpeed', amount=5, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+
+Stats.objects.create(name='AttackSpeed', amount=35, item=Item.objects.get(patch_version=patch_version, riot_item_id=3101))
+
+Stats.objects.create(name='Mana', amount=250, item=Item.objects.get(patch_version=patch_version, riot_item_id=3057))
+
+Stats.objects.create(name='Health', amount=200, item=Item.objects.get(patch_version=patch_version, riot_item_id=3044))
+Stats.objects.create(name='AttackDamage', amount=15, item=Item.objects.get(patch_version=patch_version, riot_item_id=3044))
+
+Stats.objects.create(name='Mana', amount=250, item=Item.objects.get(patch_version=patch_version, riot_item_id=1027))
+
+Stats.objects.create(name='Health', amount=150, item=Item.objects.get(patch_version=patch_version, riot_item_id=1028))
+
+Stats.objects.create(name='AttackDamage', amount=10, item=Item.objects.get(patch_version=patch_version, riot_item_id=1036))
+
+Stats.objects.create(name='Health', amount=350, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+Stats.objects.create(name='Mana', amount=350, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+Stats.objects.create(name='AttackDamage', amount=35, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+Stats.objects.create(name='AttackSpeed', amount=50, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+Stats.objects.create(name='CooldownReduction', amount=20, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+Stats.objects.create(name='PercentMovementSpeed', amount=8, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+
+Stats.objects.create(name='AttackSpeed', amount=12, item=Item.objects.get(patch_version=patch_version, riot_item_id=1042))
+
+Effect.objects.create(description='<unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃をすると移動速度が20増加する。効果は2秒間。キルすると移動速度が60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+Effect.objects.create(description='<unique>自動効果(重複不可) - 追撃: </unique>スキル使用後、次の通常攻撃の命中時に基本攻撃力の200%に等しい追加物理ダメージを与える (クールダウン1.5秒)。', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3078))
+
+Effect.objects.create(description='<unique>自動効果(重複不可) :</unique> クールダウン短縮 +10%', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3101))
+
+Effect.objects.create(description='<unique>自動効果(重複不可) - 追撃:</unique> スキルを使った後、次の通常攻撃の命中時に、基本攻撃力の100%に等しい追加物理ダメージを得る (クールダウン1.5秒)', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3057))
+
+Effect.objects.create(description='<unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃で、2秒間移動速度が20 増加する。敵をキルした場合、移動速度は60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3044))
+
+Effect.objects.create(description='<unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃をすると移動速度が20増加する。効 果は2秒間。キルすると移動速度が60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))
+Effect.objects.create(description='<unique>自動効果(重複不可) - 追撃:</unique> スキル使用後、次の通常攻撃の命中時に基本攻撃力の200%に等しい追加物理ダメージを与える(クールダウン1.5秒)。', is_unique=True, is_evaluable=False, item=Item.objects.get(patch_version=patch_version, riot_item_id=3384))

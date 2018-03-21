@@ -302,10 +302,29 @@ for v in items['data'].values():
 2403 ミニオン吸収装置
 2419 始まりのストップウォッチ
 
-# descriptionのパース
-for v in items['data'].values():
-    if 'description' not in v.keys():
-        print('null description @ {0} {1}'.format(v['id'], v['name']))
-    else:
-        with codecs.open('./workspace/description.json', 'a', 'utf-8') as f:
-            f.write(v['description'] + "\n")
+In [21]: items['data']['3078']['description']
+Out[21]: '<stats>体力 +250<br><mana>マナ +250 </mana><br>攻撃力 +25<br>攻撃速度 +40%<br>クールダウン短縮 +20%<br>移動速 度 +5%</stats><br><br><unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃をすると移動速度が20増加する。効果は2秒間。キ ルすると移動速度が60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。<br><unique>自動効果(重複不可) - 追 撃: </unique>スキル使用後、次の通常攻撃の命中時に基本攻撃力の200%に等しい追加物理ダメージを与える (クールダウン1.5秒)。'
+
+In [22]: items['data']['3101']['description']
+Out[22]: '<stats>攻撃速度 +35%</stats><br><br><unique>自動効果(重複不可) :</unique> クールダウン短縮 +10%'
+
+In [23]: items['data']['3057']['description']
+Out[23]: '<stats><mana>マナ +250</mana><br>クールダウン短縮 +10%</stats><br><br><unique>自動効果(重複不可) - 追撃:</unique> スキルを使った後、次の通常攻撃の命中時に、基本攻撃力の100%に等しい追加物理ダメージを得る (クールダウン1.5秒)'
+
+In [24]: items['data']['3044']['description']
+Out[24]: '<stats>体力 +200<br>攻撃力 +15</stats><br><br><unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃で、2秒間移 動速度が20増加する。敵をキルした場合、移動速度は60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。'
+
+In [25]: items['data']['1027']['description']
+Out[25]: '<stats><mana>マナ +250</mana></stats>'
+
+In [26]: items['data']['1028']['description']
+Out[26]: '<stats>体力 +150</stats>'
+
+In [27]: items['data']['1036']['description']
+Out[27]: '<stats>攻撃力 +10</stats>'
+
+In [28]: items['data']['3384']['description']
+Out[28]: "<stats><font color='#FFFFFF'>体力 +350</font><br><font color='#FFFFFF'><mana>マナ +350</mana></font><br><font color='#FFFFFF'>攻撃力 +35</font><br><font color='#FFFFFF'>攻撃速度 +50%</font><br>クールダウン短縮 +20%<br><font color='#FFFFFF'>移動速度 +8%</font></stats><br><br><unique>自動効果(重複不可) - 疾駆:</unique> 通常攻撃をすると移動速度が20増 加する。効果は2秒間。キルすると移動速度が60増加する。遠隔チャンピオンの場合、この増加移動速度は半分になる。<br><unique> 自動効果(重複不可) - 追撃:</unique> スキル使用後、次の通常攻撃の命中時に基本攻撃力の200%に等しい追加物理ダメージを与える(クールダウン1.5秒)。"
+
+In [29]: items['data']['1042']['description']
+Out[29]: '<stats>攻撃速度 +12%</stats>'

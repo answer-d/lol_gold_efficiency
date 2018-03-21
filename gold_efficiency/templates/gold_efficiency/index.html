@@ -1,0 +1,40 @@
+{% if item_list %}
+    <!-- {{ item_list }} -->
+    <table border="1">
+        <tr>
+            <th>アイテム</th>
+            <th>合計金額</th>
+            <th>金銭価値</th>
+            <th>金銭価値(詳細)</th>
+            <th>金銭効率</th>
+        </tr>
+    {% for item in item_list %}
+        <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.total_cost }}G</td>
+            <td>{{ item.gold_value }}G</td>
+            <td>
+                {% if item.stats or item.effects %}
+                    <table border="1">
+                        {% for s in item.stats %}
+                            <tr>
+                                <td>{{ s.amount }} {{ s.name }}</td>
+                                <td>{{ s.gold_value }}G</td>
+                            </tr>
+                        {% endfor %}
+                        {% for e in item.effects %}
+                            <tr>
+                                <td>{{ e.description }}</td>
+                                <td>{{ e.gold_value }}G</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            </td>
+            <td>{{ item.gold_efficiency }}%</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>No Items are available.</p>
+{% endif %}
