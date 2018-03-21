@@ -25,7 +25,11 @@
                         {% for e in item.effects %}
                             <tr>
                                 <td>{{ e.description }}</td>
-                                <td>{{ e.gold_value }}G</td>
+                                {% if e.gold_value %}
+                                    <td>{{ e.gold_value }}G</td>
+                                {% else %}
+                                    <td>評価不可</td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     </table>

@@ -28,7 +28,7 @@ def index(request):
         for i in effect_set:
             effect_list.append({
                 'description': i.description,
-                'gold_value': '- ',
+                'gold_value': None,
             })
 
         tmp = {
@@ -37,7 +37,7 @@ def index(request):
             'gold_value': gold_value,
             'stats': stats_list,
             'effects': effect_list,
-            'gold_efficiency': 100*gold_value/item.total_cost,
+            'gold_efficiency': 100 * gold_value / item.total_cost,
         }
 
         item_list.append(tmp)
