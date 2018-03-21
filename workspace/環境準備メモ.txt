@@ -24,7 +24,7 @@ python manage.py loaddata fixtures/sample_trinity.json
 python manage.py runserver
 
 # http://127.0.0.1/ にアクセス！
-# admin画面はhttp://127.0.0.1/（admin/P@ssw0rd で入れる）
+# DBの中身見たかったらadmin画面で。http://127.0.0.1/admin（admin/P@ssw0rd）
 
 
 ■ (あんでぃー用)サンプルデータ作成
