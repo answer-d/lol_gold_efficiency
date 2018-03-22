@@ -1,6 +1,12 @@
 {% extends "gold_efficiency/base.html" %}
 
+{% load i18n static %}
+
 {% block title %}アイテム一覧{% endblock title %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/datatables.min.css' %}"/>
+{% endblock extra_css %}
 
 {% block content %}
 <nav class="navbar sticky-top navbar-light" style="background-color: #e3f2fd;">
@@ -20,7 +26,7 @@
 {% if item_list %}
     <div class="table-responsive">
         <!--<table class="table table-hover">-->
-        <table class="table">
+        <table class="table" id="itemtable">
         <caption>patch {{ patch_version.version_str }}</caption>
         <thead class="thead-dark">
             <tr>
@@ -73,3 +79,17 @@
     <p>No Items are available.</p>
 {% endif %}
 {% endblock content %}
+
+{% block extra_js %}
+<script type="text/javascript" src="{% static 'gold_efficiency/js/datatables.min.js' %}"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('#itemtable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Japanese.json"
+            },
+            "paging": false
+        });
+    });
+</script>
+{% endblock extra_js %}
