@@ -10,8 +10,10 @@ Python 3.6.4
 python -m venv <仮想環境パス>
 <仮想環境パス>/Scripts/activate
 
-# モジュールインストール
-pip install django riotwatcher
+# モジュールインストール(django-bootstrap4はいずれ使う予定)
+pip install django
+pip install riotwatcher
+pip install django-bootstrap4
 
 # DB作成(sqlite.dbが作成される)
 python manage.py makemigrations
@@ -23,8 +25,8 @@ python manage.py loaddata fixtures/sample_trinity.json
 # サーバ起動(admin/P@ssw0rd)
 python manage.py runserver
 
-# http://127.0.0.1/ にアクセス！
-# DBの中身見たかったらadmin画面で。http://127.0.0.1/admin（admin/P@ssw0rd）
+# http://127.0.0.1:8000/ にアクセス！
+# DBの中身見たかったらadmin画面で。http://127.0.0.1:8000/admin（admin/P@ssw0rd）
 
 
 ■ (あんでぃー用)サンプルデータ作成

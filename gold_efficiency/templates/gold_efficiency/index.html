@@ -1,44 +1,75 @@
+{% extends "gold_efficiency/base.html" %}
+
+{% block title %}アイテム一覧{% endblock title %}
+
+{% block content %}
+<nav class="navbar sticky-top navbar-light" style="background-color: #e3f2fd;">
+    <a class="navbar-brand" href="#">Gold Efficiency</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#goldefficiencyNav" aria-controls="goldefficiencyNav"
+            area-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="goldefficiencyNav">
+        <a class="nav-item nav-link active" href="#">Home</a>
+        <a class="nav-item nav-link" href="#">List</a>
+    </div>
+</nav>
+
 {% if item_list %}
-    <!-- {{ item_list }} -->
-    <table border="1">
-        <tr>
-            <th>アイテム</th>
-            <th>合計金額</th>
-            <th>金銭価値</th>
-            <th>金銭価値(詳細)</th>
-            <th>金銭効率</th>
-        </tr>
-    {% for item in item_list %}
-        <tr>
-            <td>{{ item.name }}</td>
-            <td>{{ item.total_cost }}G</td>
-            <td>{{ item.gold_value }}G</td>
-            <td>
-                {% if item.stats or item.effects %}
-                    <table border="1">
-                        {% for s in item.stats %}
-                            <tr>
-                                <td>{{ s.amount }} {{ s.name }}</td>
-                                <td>{{ s.gold_value }}G</td>
-                            </tr>
-                        {% endfor %}
-                        {% for e in item.effects %}
-                            <tr>
-                                <td>{{ e.description }}</td>
-                                {% if e.gold_value %}
-                                    <td>{{ e.gold_value }}G</td>
-                                {% else %}
-                                    <td>評価不可</td>
-                                {% endif %}
-                            </tr>
-                        {% endfor %}
-                    </table>
-                {% endif %}
-            </td>
-            <td>{{ item.gold_efficiency }}%</td>
-        </tr>
-    {% endfor %}
+    <div class="table-responsive">
+        <!--<table class="table table-hover">-->
+        <table class="table">
+        <caption>patch {{ patch_version.version_str }}</caption>
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">アイテム</th>
+                <th scope="col">合計金額</th>
+                <th scope="col">金銭価値</th>
+                <th scope="col">金銭効率</th>
+                <th scope="col">詳細</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in item_list %}
+            <tr>
+                <td>
+                    <div class="card border-0">
+                        <img class="card-img-top" src="..." alt="item_image">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.name }}</h5>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ item.total_cost }}G</td>
+                <td>{{ item.gold_value }}G</td>
+                <td>{{ item.gold_efficiency }}%</td>
+                <td>
+                    {% for s in item.stats %}
+                        <dl class="row">
+                            <dd class="col-sm-10">{{ s.amount }} {{ s.name }}</dd>
+                            <dd class="col-sm-2">{{ s.gold_value }}G</dd>
+                        </dl>
+                    {% endfor %}
+                    {% for e in item.effects %}
+                        <dl class="row">
+                            {% if e.gold_value %}
+                                <dd class="col-sm-10">{{ e.description }}</dd>
+                                <dd class="col-sm-2">{{ e.gold_value }}G</dd>
+                            {% else %}
+                                <dd class="col-sm-10"><mark>{{ e.description }}</mark></dd>
+                                <dd class="col-sm-2"><span class="badge badge-secondary">評価不可</span></dd>
+                            {% endif %}
+                        </dl>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
     </table>
+    </div>
 {% else %}
     <p>No Items are available.</p>
 {% endif %}
+{% endblock content %}

@@ -96,6 +96,14 @@
     }
 },
 {
+    "model": "sessions.session",
+    "pk": "bblmwitpxe3ui4v2bm8wq4jefqe20j71",
+    "fields": {
+        "session_data": "ZWU2YzlmYWVjMTk2MTUzMzZmZDk4OTU5MjVjOGNiOTYyOTU3NjAzNTp7Il9hdXRoX3VzZXJfaWQiOiIxIiwiX2F1dGhfdXNlcl9iYWNrZW5kIjoiZGphbmdvLmNvbnRyaWIuYXV0aC5iYWNrZW5kcy5Nb2RlbEJhY2tlbmQiLCJfYXV0aF91c2VyX2hhc2giOiI5N2Q4NmM5MTIxODcxZjgxYjI2NmE4OGE5ZmUxNmQ5NzQ1NmY5ZDk3In0=",
+        "expire_date": "2018-04-05T02:30:54.663Z"
+    }
+},
+{
     "model": "gold_efficiency.patchversion",
     "pk": 3,
     "fields": {
@@ -433,6 +441,15 @@
         "name": "AttackSpeed",
         "amount": 12.0,
         "item": 18
+    }
+},
+{
+    "model": "gold_efficiency.stats",
+    "pk": 21,
+    "fields": {
+        "name": "CooldownReduction",
+        "amount": 10.0,
+        "item": 12
     }
 },
 {
@@ -1023,7 +1040,7 @@
     "pk": 1,
     "fields": {
         "password": "pbkdf2_sha256$100000$Ai50SHJV4pY3$6wNzk2tehCQPlPLhpFBpDMk7qLaBQjCyYuIl+c4KlaE=",
-        "last_login": "2018-03-21T06:01:40.331Z",
+        "last_login": "2018-03-22T02:30:54.634Z",
         "is_superuser": true,
         "username": "admin",
         "first_name": "",
@@ -1645,6 +1662,19 @@
         "object_repr": "\u30c8\u30ea\u30cb\u30c6\u30a3\u30fb\u30d5\u30a9\u30fc\u30b9",
         "action_flag": 3,
         "change_message": ""
+    }
+},
+{
+    "model": "admin.logentry",
+    "pk": 48,
+    "fields": {
+        "action_time": "2018-03-22T02:31:17.857Z",
+        "user": 1,
+        "content_type": 8,
+        "object_id": "12",
+        "object_repr": "\u30b7\u30fc\u30f3",
+        "action_flag": 2,
+        "change_message": "[{\"added\": {\"name\": \"stats\", \"object\": \"CooldownReduction\"}}]"
     }
 }
 ]

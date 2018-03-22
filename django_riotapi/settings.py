@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'gold_efficiency',
+    'bootstrap4',  # django-bootstrap4
 ]
 
 MIDDLEWARE = [
