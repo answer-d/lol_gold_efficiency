@@ -5,7 +5,7 @@
 {% block title %}アイテム一覧{% endblock title %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/datatables.min.css' %}"/>
+<link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/datatables.min.css' %}" />
 {% endblock extra_css %}
 
 {% block content %}
@@ -23,6 +23,8 @@
     </div>
 </nav>
 
+<br />
+
 {% if item_list %}
     <div class="table-responsive">
         <!--<table class="table table-hover">-->
@@ -31,10 +33,13 @@
         <thead class="thead-dark">
             <tr>
                 <th scope="col">アイテム</th>
-                <th scope="col">合計金額</th>
-                <th scope="col">金銭価値</th>
-                <th scope="col">金銭効率</th>
+                <th scope="col">合計金額 (G)</th>
+                <th scope="col">金銭価値 (G)</th>
+                <th scope="col">金銭効率 (%)</th>
+                <th scope="col">素材</th>
+                <th scope="col">合成先</th>
                 <th scope="col">詳細</th>
+                <th scope="col">Tier</th>
             </tr>
         </thead>
         <tbody>
@@ -44,25 +49,43 @@
                     <div class="card border-0">
                         <img class="card-img-top" src="..." alt="item_image">
                         <div class="card-body">
-                            <h5 class="card-title">{{ item.name }}</h5>
+                            <h6 class="card-title">{{ item.name }}</h6>
                         </div>
                     </div>
                 </td>
-                <td>{{ item.total_cost }}G</td>
-                <td>{{ item.gold_value }}G</td>
-                <td>{{ item.gold_efficiency }}%</td>
+                <td>{{ item.total_cost }}</td>
+                <td>{{ item.gold_value }}</td>
+                <td>{{ item.gold_efficiency }}</td>
+                <td>
+                    <div class="card-group">
+                        {% for from_item in item.from_items %}
+                            <div class="card border-0">
+                                <img class="card-img-top" src="..." alt="{{ from_item.name }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td>
+                    <div class="card-group">
+                        {% for into_item in item.into_items %}
+                            <div class="card border-0">
+                                <img class="card-img-top" src="..." alt="{{ into_item.name }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </td>
                 <td>
                     {% for s in item.stats %}
                         <dl class="row">
                             <dd class="col-sm-10">{{ s.amount }} {{ s.name }}</dd>
-                            <dd class="col-sm-2">{{ s.gold_value }}G</dd>
+                            <dd class="col-sm-2">{{ s.gold_value }}</dd>
                         </dl>
                     {% endfor %}
                     {% for e in item.effects %}
                         <dl class="row">
                             {% if e.gold_value %}
                                 <dd class="col-sm-10">{{ e.description }}</dd>
-                                <dd class="col-sm-2">{{ e.gold_value }}G</dd>
+                                <dd class="col-sm-2">{{ e.gold_value }}</dd>
                             {% else %}
                                 <dd class="col-sm-10"><mark>{{ e.description }}</mark></dd>
                                 <dd class="col-sm-2"><span class="badge badge-secondary">評価不可</span></dd>
@@ -70,6 +93,7 @@
                         </dl>
                     {% endfor %}
                 </td>
+                <td>{{ item.depth }}</td>
             </tr>
         {% endfor %}
         </tbody>
@@ -86,9 +110,14 @@
     $(document).ready(function() {
         $('#itemtable').DataTable({
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Japanese.json"
+                "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Japanese.json",
             },
-            "paging": false
+            "paging": false,
+            "aoColumnDefs": [
+                // { "bSearchable": false, "aTargets": [ 1, 2, 3, 4 ] },
+                { "bSortable": false, "aTargets": [ 4, 5, 6 ] },
+                // { "bVisible":false, "aTargets": [  ] },
+            ],
         });
     });
 </script>

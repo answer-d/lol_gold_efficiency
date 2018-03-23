@@ -38,6 +38,17 @@ def index(request):
             })
             # gold_value += TODO
 
+        from_item_list = list()
+        if item.from_item_str is not None:
+            for i in eval(item.from_item_str):
+                from_item_list.append(item_records.get(riot_item_id=i))
+        # print(from_item_list)
+
+        into_item_list = list()
+        if item.into_item_str is not None:
+            for i in eval(item.into_item_str):
+                into_item_list.append(item_records.get(riot_item_id=i))
+
         # アイテムの価格が0Gの場合は金銭効率評価不可 → 0とする
         try:
             gold_efficiency = gold_value / item.total_cost
@@ -48,9 +59,12 @@ def index(request):
             'name': item.name,
             'total_cost': item.total_cost,
             'gold_value': dec_round(gold_value, '0.1'),
+            'from_items': from_item_list,
+            'into_items': into_item_list,
             'stats': stats_list,
             'effects': effect_list,
             'gold_efficiency': 100 * dec_round(gold_efficiency, '0.1'),
+            'depth': item.depth if item.depth is not None else '1',
         }
 
         item_list.append(elem)
