@@ -39,6 +39,8 @@ class RiotStaticData(object):
 
     MAPID_SUMMONERS_RIFT = "11"
 
+    ITEMIMG_BASE_URL = r"http://ddragon.leagueoflegends.com/cdn/{}/img/item/{}.png"
+
     """
     コンストラクタ
     """
@@ -159,6 +161,8 @@ class RiotStaticData(object):
     itemの基本データをパース
     """
     def _parse_item(self, item, patch_version):
+        version_str = str(patch_version)
+
         item_data = dict(
             name=item["name"],
             riot_item_id=item["id"],
@@ -166,7 +170,7 @@ class RiotStaticData(object):
             total_cost=item["gold"]["total"],
             is_purchasable=item["gold"]["purchasable"],
             sell_gold=item["gold"]["sell"],
-            image_json=str(item["image"]),
+            img=self.ITEMIMG_BASE_URL.format(version_str, item["id"]),
             patch_version=patch_version,
         )
 

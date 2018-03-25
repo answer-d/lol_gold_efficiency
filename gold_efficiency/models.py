@@ -53,7 +53,7 @@ class Item(models.Model):
     total_cost = models.PositiveIntegerField()
     is_purchasable = models.BooleanField()
     sell_gold = models.PositiveIntegerField()
-    image_json = models.TextField()
+    img = models.TextField()
     from_item_str = models.CharField(max_length=200, null=True, blank=True)
     into_item_str = models.CharField(max_length=200, null=True, blank=True)
     depth = models.PositiveIntegerField(null=True, blank=True)

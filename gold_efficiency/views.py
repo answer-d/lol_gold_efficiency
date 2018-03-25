@@ -76,6 +76,7 @@ def index(request):
             'effects': effect_list,
             'gold_efficiency': 100 * dec_round(gold_efficiency, '0.1'),
             'depth': item.depth if item.depth is not None else '1',
+            "img": item.img,
         }
 
         item_list.append(elem)
