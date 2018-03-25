@@ -74,7 +74,7 @@ def index(request):
             'into_items': into_item_list,
             'stats': stats_list,
             'effects': effect_list,
-            'gold_efficiency': 100 * dec_round(gold_efficiency, '0.1'),
+            'gold_efficiency':  dec_round(100 * gold_efficiency, '0.1'),
             'depth': item.depth if item.depth is not None else '1',
             "img": item.img,
         }
