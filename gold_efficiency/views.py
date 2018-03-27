@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Item, PatchVersion, Stats, Effect, STAB_TAGS, STAB_STATS_BASE
+from .models import Item, PatchVersion, Stats, Effect, StatsBase, STAB_TAGS
 from .backends import RiotStaticData
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -19,6 +19,7 @@ def index(request):
     version = "8.6.1"
 
     static_data.update_versions(version)
+    static_data.update_stats_base(items,version)
     static_data.update_items(items, version)
 
     patch_version = PatchVersion.objects.get(version_str=version)
@@ -34,11 +35,11 @@ def index(request):
         stats_list = list()
         for i in stats_set:
             stats_list.append({
-                'name': i.name,
+                'name': i.stats.name,
                 'amount': i.amount,
-                'gold_value': dec_round(STAB_STATS_BASE[i.name] * i.amount, '0.1'),
+                'gold_value': dec_round(i.stats.gold_efficiency_per_amount * i.amount, '0.1'),
             })
-            gold_value += STAB_STATS_BASE[i.name] * i.amount
+            gold_value += i.stats.gold_efficiency_per_amount * i.amount
 
         effect_list = list()
         for i in effect_set:

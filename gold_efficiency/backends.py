@@ -3,7 +3,7 @@
 import re
 import json
 import lxml.html
-from .models import PatchVersion, Item, Stats, Effect, Tag
+from .models import PatchVersion, Item, StatsBase, Stats, Effect, Tag
 from riotwatcher import RiotWatcher
 
 
@@ -34,8 +34,37 @@ class RiotStaticData(object):
         "基本マナ自動回復": "ManaRegeneration",
         "基本体力自動回復": "HealthRegeneration",
         "攻撃速度": "AttackSpeed",
-        "回復効果およびシールド量": "HealAndShieldPower",
+        "回復効果およびシールド量": "HealAndShieldPower"
     }
+
+    # 金銭効率ベースには計算順序があるのでリスト管理
+    # → 後ろのリストに入っているアイテムは前出のアイテムの金銭効率を参照する
+    BASE_ITEMS_LIST = [
+        {
+            "AttackDamage": "1036",  # ロングソード
+            "AbilityPower": "1052",  # 増魔の書
+            "Armor": "1029",  # クロースアーマー
+            "MagicResistance": "1033",  # ヌルマジックマント
+            "Health": "1028",  # ルビークリスタル
+            "Mana": "1027",  # サファイアクリスタル
+            "HealthRegeneration": "1006",  # 再生の珠
+            "ManaRegeneration": "1004",  # フェアリーチャーム
+            "CriticalStrikeChance": "1051",  # 喧嘩屋のグローブ
+            "AttackSpeed": "1042",  # ダガー
+            "FlatMovementSpeed": "1001",  # ブーツ
+        },
+        {
+            "LifeSteal": "1053",  # ヴァンパイアセプター
+            "Lethality": "3134",  # セレイテッドダーク
+            "MagicPenetration": "3020",  # ソーサラーシューズ
+            # "OnhitDamage": "1043",  # リカーブボウ
+            "CooldownReduction": "3067",  # キンドルジェム
+            "PercentMovementSpeed": "3113",  # エーテルウィスプ
+        },
+        {
+            "HealAndShieldPower": "3114",  # フォビドゥンアイドル
+        }
+    ]
 
     MAPID_SUMMONERS_RIFT = "11"
 
@@ -50,10 +79,93 @@ class RiotStaticData(object):
         self.locale = locale
 
     """
+    StatsBaseを計算して、指定されたバージョンとしてDBに登録する
+    """
+    def update_stats_base(self, items, version):
+        version = PatchVersion.objects.get(version_str=version)
+
+        # 金銭効率ベースになるアイテムをtier順に処理
+        for base_items in self.BASE_ITEMS_LIST:
+            for key, value in base_items.items():
+                if StatsBase.objects.filter(patch_version=version, name=key):
+                    #DEBUG
+                    print("already created StatsBase : {}".format(key))
+                    continue
+
+                item = items['data'][value]
+
+                # DEBUG
+                print("loop for : {}".format(item['name']))
+
+                # サモリフ以外除外
+                if item["maps"][self.MAPID_SUMMONERS_RIFT] is False:
+                    continue
+
+                # アイテムデータの取得
+                item_data = self._parse_item(item, version)
+                stats, effects, unique_stats, unique_effects =\
+                    self._parse_description(item["description"], version)
+
+                # 金銭効率ベース計算
+                # 1. アイテムのトータル金額を取得して評価額としてセット
+                # 2. Statsの中に既に金銭効率が決まっているものがあれば金銭価値算出して評価額から引く
+                # 3. 2を繰り返し、Statsが単一になるまでやる
+                # 4. 最終的に残った単一のStatsが計算しようとしているStatsのキーと一致する(はず)
+                # 5. 得られたStatsのamountで評価額を割った値が金銭効率ベースになる
+                all_stats = stats.copy()
+                all_stats.update(unique_stats)
+                valuation_gold = item_data["total_cost"]
+
+                # DEBUG
+                print("evaluate gold efficiency base start")
+                print("all_stats : {}".format(all_stats))
+
+                while 1 < len(all_stats):
+                    # DEBUG
+                    print("len(all_stats):{} > 1".format(len(all_stats)))
+
+                    for stats_name, stats_amount in list(all_stats.items()):
+                        #DEBUG
+                        print("stats_name:{}, stats_amount:{}".format(stats_name, stats_amount))
+
+                        existing_stats_base = StatsBase.objects.filter(name=stats_name, patch_version=version)
+
+                        #DEBUG
+                        print(existing_stats_base)
+
+                        if len(existing_stats_base) == 1:
+                            valuation_gold -= existing_stats_base[0].gold_efficiency_per_amount * int(stats_amount)
+                            del all_stats[stats_name]
+
+                            #DEBUG
+                            print("all_stats[{}] deleted".format(stats_name))
+
+                if key not in all_stats.keys():
+                    # DEBUG
+                    print("＼(^o^)／ｵﾜﾀ")
+
+                gold_efficiency_per_amount = valuation_gold / int(all_stats[key])
+
+                # DEBUG
+                print("[{}] gold_efficiency_per_amount = {}".format(key, gold_efficiency_per_amount))
+                print("evaluate gold efficiency base end")
+
+                # DB登録
+                StatsBase.objects.update_or_create(
+                    name=key,
+                    gold_efficiency_per_amount=gold_efficiency_per_amount,
+                    patch_version=version
+                )
+
+    """
     itemsのjsonデータを指定されたバージョンとしてDBに登録する
     """
     def update_items(self, items, version):
         version = PatchVersion.objects.get(version_str=version)
+
+        # StatsBaseが登録されてなかったら先に登録する
+        if not StatsBase.objects.filter(patch_version=version).exists():
+            self.update_stats_base(items, version)
 
         for id in items["data"].keys():
             item = items["data"][id]
@@ -91,7 +203,7 @@ class RiotStaticData(object):
                     # 登録
                     for name, amount in stats.items():
                         Stats.objects.update_or_create(
-                            name=name,
+                            stats=StatsBase.objects.get(patch_version=version, name=name),
                             amount=amount,
                             item=item_record
                         )
@@ -104,7 +216,7 @@ class RiotStaticData(object):
                         )
                     for name, amount in unique_stats.items():
                         Stats.objects.update_or_create(
-                            name=name,
+                            stats=StatsBase.objects.get(patch_version=version, name=name),
                             amount=amount,
                             item=item_record
                         )
