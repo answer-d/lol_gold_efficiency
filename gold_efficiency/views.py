@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Item, PatchVersion, Stats, Effect, StatsBase, STAB_TAGS
+from .models import Item, PatchVersion, Stats, Effect
 from .backends import RiotStaticData
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -19,7 +19,7 @@ def index(request):
     version = "8.6.1"
 
     static_data.update_versions(version)
-    static_data.update_stats_base(items,version)
+    static_data.update_stats_base(items, version)
     static_data.update_items(items, version)
 
     patch_version = PatchVersion.objects.get(version_str=version)

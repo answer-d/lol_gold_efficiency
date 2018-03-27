@@ -87,15 +87,10 @@ class RiotStaticData(object):
         # 金銭効率ベースになるアイテムをtier順に処理
         for base_items in self.BASE_ITEMS_LIST:
             for key, value in base_items.items():
-                if StatsBase.objects.filter(patch_version=version, name=key):
-                    #DEBUG
-                    print("already created StatsBase : {}".format(key))
+                if StatsBase.objects.filter(patch_version=version, name=key).exists():
                     continue
 
                 item = items['data'][value]
-
-                # DEBUG
-                print("loop for : {}".format(item['name']))
 
                 # サモリフ以外除外
                 if item["maps"][self.MAPID_SUMMONERS_RIFT] is False:
@@ -116,39 +111,22 @@ class RiotStaticData(object):
                 all_stats.update(unique_stats)
                 valuation_gold = item_data["total_cost"]
 
-                # DEBUG
-                print("evaluate gold efficiency base start")
-                print("all_stats : {}".format(all_stats))
-
                 while 1 < len(all_stats):
-                    # DEBUG
-                    print("len(all_stats):{} > 1".format(len(all_stats)))
-
                     for stats_name, stats_amount in list(all_stats.items()):
-                        #DEBUG
-                        print("stats_name:{}, stats_amount:{}".format(stats_name, stats_amount))
-
                         existing_stats_base = StatsBase.objects.filter(name=stats_name, patch_version=version)
-
-                        #DEBUG
-                        print(existing_stats_base)
 
                         if len(existing_stats_base) == 1:
                             valuation_gold -= existing_stats_base[0].gold_efficiency_per_amount * int(stats_amount)
                             del all_stats[stats_name]
 
-                            #DEBUG
-                            print("all_stats[{}] deleted".format(stats_name))
-
+                # キー一致してるかチェック
+                # TODO : エラー処理
                 if key not in all_stats.keys():
-                    # DEBUG
                     print("＼(^o^)／ｵﾜﾀ")
+                    break
 
+                # 金銭効率ベースの計算
                 gold_efficiency_per_amount = valuation_gold / int(all_stats[key])
-
-                # DEBUG
-                print("[{}] gold_efficiency_per_amount = {}".format(key, gold_efficiency_per_amount))
-                print("evaluate gold efficiency base end")
 
                 # DB登録
                 StatsBase.objects.update_or_create(
@@ -180,12 +158,12 @@ class RiotStaticData(object):
                 item_record, _ = Item.objects.update_or_create(**item_data)
 
                 # タグ登録
-                if "tag" in item:
+                if "tags" in item:
                     for tag in item["tags"]:
                         Tag.objects.update_or_create(
                             name=tag,
-                            item=item_record
                         )
+                        item_record.tags.add(Tag.objects.get(name=tag))
 
                 # スタッツ/エフェクト登録
                 if "description" in item:
