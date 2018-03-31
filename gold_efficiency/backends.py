@@ -2,9 +2,20 @@
 
 import re
 import json
+import logging
+from enum import Enum
 import lxml.html
+import lxml.etree
 from .models import PatchVersion, Item, StatsBase, Stats, Effect, Tag
 from riotwatcher import RiotWatcher
+
+
+class EFFECT_TYPES(Enum):
+    NORMAL = 1  # センスの無い命名
+    UNIQUE = 2
+    REWARD = 3
+    QUEST = 4
+    OTHER = 5
 
 
 class RiotStaticData(object):
@@ -70,6 +81,15 @@ class RiotStaticData(object):
 
     ITEMIMG_BASE_URL = r"http://ddragon.leagueoflegends.com/cdn/{}/img/item/{}.png"
 
+    USELESS_TAGS = [
+        "//a",
+        "//u",
+        "//font",
+        "//scalelevel",
+        "//mana",
+        "//unlockedpassive"
+    ]
+
     """
     コンストラクタ
     """
@@ -77,6 +97,15 @@ class RiotStaticData(object):
         self.api_key = api_key
         self.region = region
         self.locale = locale
+
+        # ロガー（今は使ってない）
+        # ファイルハンドラのログはmanage.pyと同階層に生成される
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
+        # handler = logging.FileHandler(filename="backends.log", encoding="utf-8", mode="w")
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.DEBUG)
+        self.logger.addHandler(handler)
 
     """
     StatsBaseを計算して、指定されたバージョンとしてDBに登録する
@@ -99,7 +128,7 @@ class RiotStaticData(object):
                 # アイテムデータの取得
                 item_data = self._parse_item(item, version)
                 stats, effects, unique_stats, unique_effects =\
-                    self._parse_description(item["description"], version)
+                    self._parse_description(item["description"])
 
                 # 金銭効率ベース計算
                 # 1. アイテムのトータル金額を取得して評価額としてセット
@@ -169,7 +198,7 @@ class RiotStaticData(object):
                 if "description" in item:
                     # パース
                     stats, effects, unique_stats, unique_effects =\
-                        self._parse_description(item["description"], version)
+                        self._parse_description(item["description"])
 
                     # EffectAmountの挿入
                     effects = self._insert_effect_amount(effects, item)
@@ -276,68 +305,62 @@ class RiotStaticData(object):
     """
     description内のstatsおよびeffectのパース
     """
-    def _parse_description(self, description, patch_version):
+    def _parse_description(self, description):
         body = lxml.html.fromstring(description)
-        stats = {}
-        effects = []
-        unique_stats = {}
-        unique_effects = []
+        stats = dict()
+        effects = list()
+        unique_stats = dict()
+        unique_effects = list()
 
         # いらないタグを除去
-        for element in body.xpath("//font"):
-            element.drop_tag()
-        for element in body.xpath("//a"):
-            element.drop_tag()
-        for element in body.xpath("//unlockedPassive"):
-            element.drop_tag()
-        for element in body.xpath("//scaleLevel"):
-            element.drop_tag()
-        for element in body.xpath("//mana"):
+        useless_tags = "|".join(self.USELESS_TAGS)
+        for element in body.xpath(useless_tags):
             element.drop_tag()
 
         # <stats></stats>内のパラメータ
         for stats_set in body.xpath("//stats/text()"):
             stats_list = stats_set.split("\n")
-            stats_list = map(lambda x: x.strip(), stats_list)
-            stats_list = map(
-                lambda x: x.replace("+", ""),
-                stats_list
-            )
+
             for s in stats_list:
                 if self._is_stats(s):
                     key, value = self._convert_stats(s)
                     stats[key] = value
 
-        # <active></active>と<passive></passive>
+        # Effect周り全部
+        effect_tags = "//active|//passive|//unique"
+        quest = ""
         reward = ""
-        for effect in body.xpath("//active"):
+        for effect in body.xpath(effect_tags):
             if effect.tail is not None:
-                effect = effect.text.strip() + effect.tail.strip()
-                effects.append(effect)
-        for effect in body.xpath("//passive"):
-            if effect.tail is not None:
-                if effect.text == "報酬:":
-                    reward = effect.text
-                    continue
-                effect = reward + effect.text.strip() + effect.tail.strip()
-                effects.append(effect)
+                effect_type = self._get_effect_type(effect)
 
-                if reward != "":
-                    reward = ""
-
-        # <unique></unique>内のパラメータ
-        for unique in body.xpath("//unique"):
-            if unique.tail is not None:
-                unique_list = unique.tail.split("\n")
-                unique_list = list(map(lambda x: x.strip().replace("+", ""), unique_list))
-                for v in unique_list:
-                    if self._is_stats(v):
-                        key, value = self._convert_stats(v)
+                if effect_type == EFFECT_TYPES.UNIQUE:
+                    if self._is_stats(effect.tail):
+                        key, value = self._convert_stats(effect.tail)
                         unique_stats[key] = value
                     else:
-                        v = unique.text + v
-                        unique_effects.append(v)
-        unique_effects = [e for e in unique_effects if e != ""]
+                        unique_effects.append(
+                            effect.text.strip() + effect.tail.strip()
+                        )
+                elif effect_type == EFFECT_TYPES.NORMAL:
+                    if self._is_stats(effect.tail):
+                        key, value = self._convert_stats(effect.tail)
+                        stats[key] = value
+                    else:
+                        effects.append(
+                            effect.text.strip() + effect.tail.strip()
+                        )
+                elif effect_type == EFFECT_TYPES.QUEST:
+                    quest = effect.text.strip() + effect.tail.strip()
+                elif effect_type == EFFECT_TYPES.REWARD:
+                    reward = effect.text.strip() + effect.tail.strip()
+                    reward_effect = effect.getnext()
+                    reward += reward_effect.text.strip() + reward_effect.tail.strip()
+                    break
+                else:
+                    effects.append(effect.text.strip() + effect.tail.strip())
+        if quest != "" and reward != "":
+            effects.append(quest + reward)
 
         return stats, effects, unique_stats, unique_effects
 
@@ -345,6 +368,7 @@ class RiotStaticData(object):
     取り出したものがstatsかeffectかを判定
     """
     def _is_stats(self, contents):
+        contents = contents.strip()
         splitted = contents.split(" ")
         if len(splitted) != 2:
             return False
@@ -360,6 +384,20 @@ class RiotStaticData(object):
         else:
             return False
 
+    def _get_effect_type(self, element):
+        header = element.text.strip()
+
+        if header.find("重複不可") >= 0:
+            return EFFECT_TYPES.UNIQUE
+        elif (header.find("発動効果") >= 0) or (header.find("自動効果") >= 0):
+            return EFFECT_TYPES.NORMAL
+        elif header.find("クエスト") >= 0:
+            return EFFECT_TYPES.QUEST
+        elif header.find("報酬") >= 0:
+            return EFFECT_TYPES.REWARD
+        else:
+            return EFFECT_TYPES.OTHER
+
     """
     statsを切り分ける.
     その際データベースに登録可能なキー名に変換する.
@@ -368,6 +406,8 @@ class RiotStaticData(object):
     stats, value = "スタッツ value"
     """
     def _convert_stats(self, contents):
+        contents = contents.strip()
+        contents = contents.replace("+", "")
         key, value = contents.split(" ")
 
         if value.find("%") >= 0:
