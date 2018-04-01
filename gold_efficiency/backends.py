@@ -6,7 +6,7 @@ import logging
 from enum import Enum
 import lxml.html
 import lxml.etree
-from .models import PatchVersion, Item, StatsBase, Stats, Effect, Tag
+from .models import PatchVersion, Item, StatsBase, Effect, Tag
 from riotwatcher import RiotWatcher
 
 
@@ -145,7 +145,7 @@ class RiotStaticData(object):
                         existing_stats_base = StatsBase.objects.filter(name=stats_name, patch_version=version)
 
                         if len(existing_stats_base) == 1:
-                            valuation_gold -= existing_stats_base[0].gold_efficiency_per_amount * int(stats_amount)
+                            valuation_gold -= existing_stats_base[0].gold_value_per_amount * int(stats_amount)
                             del all_stats[stats_name]
 
                 # キー一致してるかチェック
@@ -155,12 +155,12 @@ class RiotStaticData(object):
                     break
 
                 # 金銭効率ベースの計算
-                gold_efficiency_per_amount = valuation_gold / int(all_stats[key])
+                gold_value_per_amount = valuation_gold / int(all_stats[key])
 
                 # DB登録
                 StatsBase.objects.update_or_create(
                     name=key,
-                    gold_efficiency_per_amount=gold_efficiency_per_amount,
+                    gold_value_per_amount=gold_value_per_amount,
                     patch_version=version
                 )
 
@@ -209,29 +209,41 @@ class RiotStaticData(object):
 
                     # 登録
                     for name, amount in stats.items():
-                        Stats.objects.update_or_create(
-                            stats=StatsBase.objects.get(patch_version=version, name=name),
-                            amount=amount,
-                            item=item_record
+                        Effect.objects.update_or_create(
+                            description=str(amount)+name,
+                            is_unique=False,
+                            formula="{} * [{}]".format(str(amount), name),
+                            calc_priority=1,
+                            is_updated_in_current_patch=False,
+                            is_checked_evaluation=True,
+                            item=item_record,
                         )
                     for effect in effects:
                         Effect.objects.update_or_create(
                             description=effect,
                             is_unique=False,
-                            is_evaluable=False,
+                            calc_priority=1,
+                            is_updated_in_current_patch=False,
+                            is_checked_evaluation=False,
                             item=item_record,
                         )
                     for name, amount in unique_stats.items():
-                        Stats.objects.update_or_create(
-                            stats=StatsBase.objects.get(patch_version=version, name=name),
-                            amount=amount,
-                            item=item_record
+                        Effect.objects.update_or_create(
+                            description=str(amount) + name,
+                            is_unique=True,
+                            formula="{} * [{}]".format(str(amount), name),
+                            calc_priority=1,
+                            is_updated_in_current_patch=False,
+                            is_checked_evaluation=True,
+                            item=item_record,
                         )
                     for effect in unique_effects:
                         Effect.objects.update_or_create(
                             description=effect,
                             is_unique=True,
-                            is_evaluable=False,
+                            calc_priority=1,
+                            is_updated_in_current_patch=False,
+                            is_checked_evaluation=False,
                             item=item_record,
                         )
 

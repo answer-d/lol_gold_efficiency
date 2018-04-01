@@ -32,36 +32,25 @@
                 <br>{{ item.name }}
             </td>
             <td>{{ item.total_cost }}</td>
-            <td>{{ item.gold_value }}</td>
-            <td>{{ item.gold_efficiency }}</td>
+            <td>{{ item.get_gold_value|floatformat }}</td>
+            <td>{{ item.get_gold_efficiency|floatformat }}%</td>
             <td>
-                <div class="card-group">
-                    {% for from_item in item.from_items %}
-                        <img src="{{ from_item.img }}" alt="{{ from_item.name }}" width="32" height="32" />
-                    {% endfor %}
-                </div>
-            </td>
-            <td>
-                <div class="card-group">
-                    {% for into_item in item.into_items %}
-                        <img src="{{ into_item.img }}" alt="{{ into_item.name }}" width="32" height="32" />
-                    {% endfor %}
-                </div>
-            </td>
-            <td>
-                {% for s in item.stats %}
-                    <dl class="row">
-                        <dd class="col-8">{{ s.amount }} {{ s.name }}</dd>
-                        <dd class="col-4">{{ s.gold_value }}</dd>
-                    </dl>
+                {% for from_item in item.from_items %}
+                    <img src="{{ from_item.img }}" alt="{{ from_item.name }}" width="32" height="32" />
                 {% endfor %}
-                {% for e in item.effects %}
+            </td>
+            <td>
+                {% for into_item in item.into_items %}
+                    <img src="{{ into_item.img }}" alt="{{ into_item.name }}" width="32" height="32" />
+                {% endfor %}
+            </td>
+            <td>
+                {% for e in item.effect_set.all %}
                     <dl class="row">
-                        {% if e.gold_value %}
-                            <dd class="col-8">{{ e.description }}</dd>
-                            <dd class="col-4">{{ e.gold_value }}</dd>
+                        <dd class="col-8">{{ e.description }}</dd>
+                        {% if e.is_evaluable %}
+                            <dd class="col-4">{{ e.get_gold_value|floatformat }}</dd>
                         {% else %}
-                            <dd class="col-8"><mark>{{ e.description }}</mark></dd>
                             <dd class="col-4"><span class="badge badge-secondary">評価不可</span></dd>
                         {% endif %}
                     </dl>

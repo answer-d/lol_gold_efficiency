@@ -1,22 +1,12 @@
 from django.contrib import admin
-from .models import PatchVersion, Item, Stats, StatsBase, Effect, Tag
+from .models import PatchVersion, Item, StatsBase, Effect, Tag
 
 # Register your models here.
-
-
-class StatsInline(admin.TabularInline):
-    model = Stats
-    extra = 1
 
 
 class EffectInline(admin.StackedInline):
     model = Effect
     extra = 1
-
-
-# class TagInline(admin.TabularInline):
-#     model = Tag
-#     extra = 1
 
 
 class ItemAdmin(admin.ModelAdmin):
@@ -26,7 +16,7 @@ class ItemAdmin(admin.ModelAdmin):
         'depth', 'patch_version', '_tags'
     )
     inlines = [
-        StatsInline, EffectInline
+       EffectInline
     ]
 
     def _tags(self, row):
@@ -36,6 +26,5 @@ class ItemAdmin(admin.ModelAdmin):
 admin.site.register(Item, ItemAdmin)
 admin.site.register(PatchVersion)
 admin.site.register(StatsBase)
-admin.site.register(Stats)
 admin.site.register(Effect)
 admin.site.register(Tag)

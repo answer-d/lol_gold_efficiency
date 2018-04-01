@@ -1,0 +1,181 @@
+■ アイテムスタッツ/効果パターン分析
+・<stats>タグの中に考慮できてないもの(評価不可・条件付きで評価可能・他ステータス依存で評価可能)がある…
+  ジャングル内での基本マナ自動回復  ※ 条件付きで評価可能？
+    ハンタータリスマン	1039
+    ストーカーブレード	3706
+    スカーミッシュセイバー	3715
+  対モンスターライフスティール  ※ 条件付きで評価可能？
+    ハンターマチェット	1041
+    ストーカーブレード	3706
+    スカーミッシュセイバー	3715
+  体力増加分  ※ 他ステータス依存で評価可能
+    エンチャント: シンダーハルク	1401
+    エンチャント: シンダーハルク	1413
+    エンチャント: シンダーハルク	3672
+  レベル依存  ※ 他ステータス依存で評価可能
+    ヘクスコアMK-1	3196
+    ヘクスコアMK-2	3197
+    パーフェクト・ヘクスコア	3198
+    プロトタイプ・ヘクスコア	3200
+  獲得ゴールド(10秒毎)  ※ 評価不可能
+    エンシェントコイン	3301
+    レリックシールド	3302
+    スペルシーフエッジ	3303
+
+・Onhitまとめ
+  Onhitダメージは金銭効率評価できるのでパースしたいんだけど、お前一律同じ文言にしろやボケカス
+    <unique>自動効果(重複不可):</unique> 通常攻撃時に15の追加物理ダメージを与える。
+      リカーブボウ	1043
+    <unique>自動効果(重複不可):</unique> 通常攻撃の命中時に、標的の最大体力の4%の追加物理ダメージを与える(中立モンスター/ミニオンに対しては最大75)。
+      エンチャント: ブラッドレイザー	1416
+      エンチャント: ブラッドレイザー	1419
+      エンチャント: ブラッドレイザー	3675
+    <unique>自動効果(重複不可):</unique> 通常攻撃が命中した際に42の追加魔法ダメージを与える。
+      ウィッツエンド	3091
+    <unique>自動効果(重複不可) :</unique> 通常攻撃の命中時に15 (+魔力の15%) の追加魔法ダメージを与える。
+      ナッシャー・トゥース	3115
+    <unique>自動効果(重複不可):</unique> 通常攻撃が対象の現在体力の8%を追加物理ダメージとして与える。
+      ルインドキング・ブレード	3153
+    <passive>自動効果:</passive> 通常攻撃時に5(+増加攻撃力の10%)の物理ダメージと5(+魔力の10%)の魔法ダメージを与える。
+      グインソー・レイジブレード	3124
+
+・<stats>タグの内外両方で出現するステータスがある
+  CDR(一例)
+    アイスボーンガントレット	3025  ※ タグ内
+    アイオニアブーツ	3158  ※ タグ外
+
+・同じStatsが上昇する効果が複数回登場するケースがある
+  ちょっとだけ魔法がかったブーツ	2422
+    <unique>自動効果(重複不可) - 移動速度強化: </unique>移動速度 +25
+    <unique>自動効果(重複不可): </unique>移動速度 +10<br><br>ちょっとだけ魔法がかったブーツをアップグレードすると移動速度 +10を引き継ぐ。
+
+・スタック数が一定数以上の時にステ増加する場合がある
+  <unique>自動効果(重複不可) - ドレッド:</unique> 栄光1スタックごとに5の魔力を得る。栄光スタックが15以上になると、移動速度が10%増加する。
+    メジャイ・ソウルスティーラー	3041
+
+・ある効果の中で評価可能な部分とそうでない部分が混在する場合がある
+  <unique>自動効果(重複不可) - 畏怖:</unique> 最大マナの3%に等しい魔力を得る。消費マナの25%を回復。
+    セラフ・エンブレイス	3048
+  ※ 金銭価値○○G「以上」として表現できるようにしておきたいな…
+
+・アイテムの金銭価値評価には計算順序が存在する
+  1. 「静的に決まるもの/スタック依存で決まるもの」
+  2. 「自身の他のステータスによって決まるもの」
+    → この中にもプライオリティがある、例えば
+       BaseAD上昇(ジャウリムフィスト系)
+         → AdditionalADやTotalADを参照するEffect
+
+
+■ アイテムに紐づく効果に関する基本設計思想
+・以前は<stats>タグ内の値を静的に評価可能なStatsとして捉えていたが、
+  <stats>タグ内にも評価不可な項目がある(サポアイテム、JGアイテムなど)ことが判明した
+  よって、アイテムに紐づく効果は<stats>タグ内外問わず全てEffectモデルとして捉えることとする
+  分解は今の粒度でする
+  → 1つのアイテムに、複数のEffectが紐づくイメージ
+・Effectモデルには金銭価値計算ルールを表す文字列フィールドを定義し、
+  金銭価値は当該フィールドをreplace()およびeval()することによって算出する
+・金銭価値計算をeval()により実施するため、金銭価値計算ルール登録時や金銭価値計算時のインプットは
+  厳密なヴァリデーションチェックを実施することとする
+  → ここはマジでめっちゃ絞らないとヤバみがヤバイ
+・descriptionの仕様がうんちであるため、金銭価値計算可能なEffectをdescriptionのパースによって
+  全て定義するのは困難である(OnhitDamageなど)
+  よって、金銭価値評価ルールはフロントおよびバックエンドから手入力でも定義できるようにする
+  もちろん機械的に判断可能なものはパース時に定義してしまえば良い
+・パッチバージョンアップ時の金銭価値計算ルールは、アイテムの性能が変わらなければ前verからの引継ぎで良いはずである
+  よって、descriptionを比較して同一であれば旧バージョンのフィールドを引き継ぐような仕組みを実装する
+  これにより、手入力された金銭価値計算ルールを持つEffectも引き継ぐことが可能である
+  → Effectの外部キーにはパッチバージョンを持たせない
+     Item内のフィールドにManyToManyField(Effect)を定義する
+     → と思ったけどStatsBaseを引くためにパッチバージョンが必要だったのでパッチバージョンは持たせることにする
+・運用観点では、パッチバージョンアップ時にdescriptionが変化したアイテムのうち
+  パースで金銭価値算出ルールを決定できないものは手入力が必要である
+  よって、フロントおよびバックエンドで把握できるような仕組みを用意しておく
+・スタックやステータスによって金銭価値が決まるEffectでは、金銭価値の最低値/最高値を算出可能とする
+  すなわち、金銭価値「○○G～○○G」「○○G以上」「○○G以下」を表現する
+・1つのEffect内で一部のみが評価可能であるEffectでは、曖昧な金銭価値を算出可能とする(インプットが与えられた場合)
+  すなわち、金銭価値「○○G以上」を表現する
+・ビルドの金銭価値計算を行う場合、Effectには計算順序が存在する
+  よってEffectモデルには計算優先度を示すフィールドを定義することとする
+  → (課題)ここはEnumで定数定義してやりたいけど、ステータス計算順序として何を用意すれば良いのか分かっていない
+
+
+■ 詳細設計
+・DBモデル案
+    class Effect:
+      description = TextField()
+      is_unique = BooleanField()
+      formula = CharField(null=True)
+      name = CharField(null=True)  # ユニーク判定用フィールド
+      min_input = TextField(null=True)  # 最低値となるインプット(Dict)
+      max_input = TextField(null=True)  # 最高値となるインプット(Dict)
+      calc_priority = PositiveIntegerField(choices={…})  # choicesの中身要検討★
+      is_updated_in_current_patch = BooleanField()  # 最新パッチで効果が変更されたか
+      is_checked_evaluation_in_current_patch = BooleanField(null=True)  # 最新パッチで金銭価値評価可能か確認されたか
+      ambiguous_type = CharField(null=True, choices{"GT": "以上", "LT": "以下", "AB": "約"})
+      is_evaluable = property("_get_is_evaluable")
+
+      def get_gold_value(Dict: input=dict()):
+        _validation_check_input(input)
+        formula = self.formula
+        # inputでformulaをreplace()する
+        # StatsBaseでformulaをreplace()する
+        return eval(formula)
+
+      def set_formula(String: formula):
+        _validation_check_formula(formula)
+        self.formula = formula
+        # self.save()
+
+      def get_input_keys():
+        """formulaに書いてあるインプットのリストを返す(フォーム生成などを考慮)""
+        pass
+
+      def get__gold_value():
+        # なんやかんやして
+        return min_value, max_value
+
+      def _get_is_evaluable():
+        if self.formula is not None:
+          return True
+        else:
+          pass
+
+      def _validation_check_formula(formula):
+        pass
+
+      def _validation_check_input(input):
+        pass
+
+・金銭価値計算ルールの例
+  ルール
+    キーは {} で囲って表記
+    金銭価値ベース値は [] で囲って表記
+    キーと金銭価値ベース値のリプレース後にpythonが理解できる式になっていること
+
+  BF
+    AD +40
+      formula = "40 * [AttackDamage]"
+      min_input = None
+      max_input = None
+
+  ROA
+    ステ増加パッシブ
+      formula = "{STACK} * (20 * [Health] + 10 * [Mana] + 4 * [AbilityPower])"
+      min_input = '{"STACK": "0"}'
+      max_input = '{"STACK": "10"}'
+
+  メジャイ(15スタック以上でMSUPもついてくる)
+    ステ増加パッシブ
+      formula = "{STACK} * (5 * [AbilityPower]) + ({STACK} // 15) * 10 * [PercentMovementSpeed]"
+      min_input = '{"STACK": "0"}'
+      max_input = '{"STACK": "25"}'
+
+  グインソー
+    ステ増加パッシブ  # ちなみに本来は評価するべきではない（恒久的なステータスではないため）
+      formula = "{STACK} * (8 * [AttackSpeed] + 0.04 * {ADDITIONAL_AD} * [AttackDamage] + 0.04 * {AP} * [AbilityPower])"
+      min_input = '{"STACK": "0", "ADDITIONAL_AD": "25", "AP": "25"}'
+      max_input = None
+    # Onhitダメージパッシブ  # onhitのStatsBaseが作れていないのでちょっと保留
+    #   formula = "(5 + 0.1*{ADDITIONAL_AD}) + (5 + 0.1 * {AP}) * [OnhitDamage]"
+    #   min_input = '{"ADDITIONAL_AD": "25", "AP": "25"}'
+    #   max_input = None
