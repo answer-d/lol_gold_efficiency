@@ -285,13 +285,6 @@ class RiotStaticData(object):
                         effects.append(
                             header.strip() + effect.strip()
                         )
-                elif effect_type == EFFECT_TYPES.QUEST:
-                    quest = header.strip() + effect.strip()
-                elif effect_type == EFFECT_TYPES.REWARD:
-                    reward = header.strip() + effect.strip()
-                    reward_effect = effect.getnext()
-                    reward += reward_header.strip() + reward_effect.strip()
-                    break
                 else:
                     effects.append(header.strip() + effect.strip())
             else:
@@ -373,7 +366,6 @@ class RiotStaticData(object):
                         "{} - {}".format(lower_value, upper_value)
                     )
                 else:
-                    print(stripped)
                     effects[i] = effects[i].replace(amount, item["effect"][stripped])
         return effects
 
