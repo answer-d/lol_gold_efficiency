@@ -1,94 +1,17 @@
 # -*- encoding: utf-8 -*-
 
+import sys
 import re
 import json
 import logging
-from enum import Enum
 import lxml.html
 import lxml.etree
-from .models import PatchVersion, Item, StatsBase, Effect, Tag
 from riotwatcher import RiotWatcher
-
-
-class EFFECT_TYPES(Enum):
-    NORMAL = 1  # センスの無い命名
-    UNIQUE = 2
-    REWARD = 3
-    QUEST = 4
-    OTHER = 5
+from ..models import PatchVersion, Item, StatsBase, Effect, Tag
+from .constant_values import *
 
 
 class RiotStaticData(object):
-
-    NOATTR_ITEM_KEYS = {
-        "from": "from_item_str",
-        "into": "into_item_str",
-        "depth": "depth",
-    }
-
-    FLAT_STATS_KEYS = {
-        "攻撃力": "AttackDamage",
-        "魔力": "AbilityPower",
-        "物理防御": "Armor",
-        "魔法防御": "MagicResistance",
-        "体力": "Health",
-        "マナ": "Mana",
-        "移動速度": "FlatMovementSpeed",
-        "脅威": "Lethality",
-        "魔法防御貫通": "MagicPenetration"
-    }
-    PERCENT_STATS_KEYS = {
-        "クールダウン短縮": "CooldownReduction",
-        "ライフスティール": "LifeSteal",
-        "移動速度": "PercentMovementSpeed",
-        "クリティカル率": "CriticalStrikeChance",
-        "基本マナ自動回復": "ManaRegeneration",
-        "基本体力自動回復": "HealthRegeneration",
-        "攻撃速度": "AttackSpeed",
-        "回復効果およびシールド量": "HealAndShieldPower"
-    }
-
-    # 金銭効率ベースには計算順序があるのでリスト管理
-    # → 後ろのリストに入っているアイテムは前出のアイテムの金銭効率を参照する
-    BASE_ITEMS_LIST = [
-        {
-            "AttackDamage": "1036",  # ロングソード
-            "AbilityPower": "1052",  # 増魔の書
-            "Armor": "1029",  # クロースアーマー
-            "MagicResistance": "1033",  # ヌルマジックマント
-            "Health": "1028",  # ルビークリスタル
-            "Mana": "1027",  # サファイアクリスタル
-            "HealthRegeneration": "1006",  # 再生の珠
-            "ManaRegeneration": "1004",  # フェアリーチャーム
-            "CriticalStrikeChance": "1051",  # 喧嘩屋のグローブ
-            "AttackSpeed": "1042",  # ダガー
-            "FlatMovementSpeed": "1001",  # ブーツ
-        },
-        {
-            "LifeSteal": "1053",  # ヴァンパイアセプター
-            "Lethality": "3134",  # セレイテッドダーク
-            "MagicPenetration": "3020",  # ソーサラーシューズ
-            # "OnhitDamage": "1043",  # リカーブボウ
-            "CooldownReduction": "3067",  # キンドルジェム
-            "PercentMovementSpeed": "3113",  # エーテルウィスプ
-        },
-        {
-            "HealAndShieldPower": "3114",  # フォビドゥンアイドル
-        }
-    ]
-
-    MAPID_SUMMONERS_RIFT = "11"
-
-    ITEMIMG_BASE_URL = r"http://ddragon.leagueoflegends.com/cdn/{}/img/item/{}.png"
-
-    USELESS_TAGS = [
-        "//a",
-        "//u",
-        "//font",
-        "//scalelevel",
-        "//mana",
-        "//unlockedpassive"
-    ]
 
     """
     コンストラクタ
@@ -100,7 +23,7 @@ class RiotStaticData(object):
 
         # ロガー（今は使ってない）
         # ファイルハンドラのログはmanage.pyと同階層に生成される
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         # handler = logging.FileHandler(filename="backends.log", encoding="utf-8", mode="w")
         handler = logging.StreamHandler()
@@ -114,7 +37,7 @@ class RiotStaticData(object):
         version = PatchVersion.objects.get(version_str=version)
 
         # 金銭効率ベースになるアイテムをtier順に処理
-        for base_items in self.BASE_ITEMS_LIST:
+        for base_items in BASE_ITEMS_LIST:
             for key, value in base_items.items():
                 if StatsBase.objects.filter(patch_version=version, name=key).exists():
                     continue
@@ -122,12 +45,12 @@ class RiotStaticData(object):
                 item = items['data'][value]
 
                 # サモリフ以外除外
-                if item["maps"][self.MAPID_SUMMONERS_RIFT] is False:
+                if item["maps"][MAPID_SUMMONERS_RIFT] is False:
                     continue
 
                 # アイテムデータの取得
                 item_data = self._parse_item(item, version)
-                stats, effects, unique_stats, unique_effects =\
+                stats, effects, unique_stats, unique_effects, other =\
                     self._parse_description(item["description"])
 
                 # 金銭効率ベース計算
@@ -174,11 +97,13 @@ class RiotStaticData(object):
         if not StatsBase.objects.filter(patch_version=version).exists():
             self.update_stats_base(items, version)
 
-        for id in items["data"].keys():
+        n_item = len(items["data"])
+        for i, id in enumerate(items["data"].keys()):
+            sys.stdout.write("\r{} / {}".format(i + 1, n_item))
             item = items["data"][id]
 
             # サモリフ以外除外
-            if item["maps"][self.MAPID_SUMMONERS_RIFT] is False:
+            if item["maps"][MAPID_SUMMONERS_RIFT] is False:
                 continue
 
             # アイテム登録
@@ -197,7 +122,7 @@ class RiotStaticData(object):
                 # スタッツ/エフェクト登録
                 if "description" in item:
                     # パース
-                    stats, effects, unique_stats, unique_effects =\
+                    stats, effects, unique_stats, unique_effects, other =\
                         self._parse_description(item["description"])
 
                     # EffectAmountの挿入
@@ -206,6 +131,7 @@ class RiotStaticData(object):
                         unique_effects,
                         item
                     )
+                    other = self._insert_effect_amount(other, item)
 
                     # 登録
                     for name, amount in stats.items():
@@ -241,6 +167,15 @@ class RiotStaticData(object):
                         Effect.objects.update_or_create(
                             description=effect,
                             is_unique=True,
+                            calc_priority=1,
+                            is_updated_in_current_patch=False,
+                            is_checked_evaluation=False,
+                            item=item_record,
+                        )
+                    for effect in other:
+                        Effect.objects.update_or_create(
+                            description=effect,
+                            is_unique=False,
                             calc_priority=1,
                             is_updated_in_current_patch=False,
                             is_checked_evaluation=False,
@@ -301,12 +236,12 @@ class RiotStaticData(object):
             total_cost=item["gold"]["total"],
             is_purchasable=item["gold"]["purchasable"],
             sell_gold=item["gold"]["sell"],
-            img=self.ITEMIMG_BASE_URL.format(version_str, item["id"]),
+            img=ITEMIMG_BASE_URL.format(version_str, item["id"]),
             patch_version=patch_version,
         )
 
         # 存在しないキーはNoneに
-        for key, value in self.NOATTR_ITEM_KEYS.items():
+        for key, value in NOATTR_ITEM_KEYS.items():
             if key in item:
                 item_data[value] = item[key]
             else:
@@ -318,63 +253,55 @@ class RiotStaticData(object):
     description内のstatsおよびeffectのパース
     """
     def _parse_description(self, description):
-        body = lxml.html.fromstring(description)
+        description = description.replace("<br>", "\n")
+        description = re.sub("<.*?>", "", description)
+        description = description.split("\n")
+        description = [line for line in description if line.strip() != ""]
+
         stats = dict()
         effects = list()
         unique_stats = dict()
         unique_effects = list()
+        other = list()
 
-        # いらないタグを除去
-        useless_tags = "|".join(self.USELESS_TAGS)
-        for element in body.xpath(useless_tags):
-            element.drop_tag()
-
-        # <stats></stats>内のパラメータ
-        for stats_set in body.xpath("//stats/text()"):
-            stats_list = stats_set.split("\n")
-
-            for s in stats_list:
-                if self._is_stats(s):
-                    key, value = self._convert_stats(s)
-                    stats[key] = value
-
-        # Effect周り全部
-        effect_tags = "//active|//passive|//unique"
-        quest = ""
-        reward = ""
-        for effect in body.xpath(effect_tags):
-            if effect.tail is not None:
-                effect_type = self._get_effect_type(effect)
+        for line in description:
+            if line.find(": ") >= 0:
+                header, effect = line.split(": ", 1)
+                effect_type = self._get_effect_type(header)
 
                 if effect_type == EFFECT_TYPES.UNIQUE:
-                    if self._is_stats(effect.tail):
-                        key, value = self._convert_stats(effect.tail)
+                    if self._is_stats(effect):
+                        key, value = self._convert_stats(effect)
                         unique_stats[key] = value
                     else:
                         unique_effects.append(
-                            effect.text.strip() + effect.tail.strip()
+                            header.strip() + effect.strip()
                         )
                 elif effect_type == EFFECT_TYPES.NORMAL:
-                    if self._is_stats(effect.tail):
-                        key, value = self._convert_stats(effect.tail)
+                    if self._is_stats(effect):
+                        key, value = self._convert_stats(effect)
                         stats[key] = value
                     else:
                         effects.append(
-                            effect.text.strip() + effect.tail.strip()
+                            header.strip() + effect.strip()
                         )
                 elif effect_type == EFFECT_TYPES.QUEST:
-                    quest = effect.text.strip() + effect.tail.strip()
+                    quest = header.strip() + effect.strip()
                 elif effect_type == EFFECT_TYPES.REWARD:
-                    reward = effect.text.strip() + effect.tail.strip()
+                    reward = header.strip() + effect.strip()
                     reward_effect = effect.getnext()
-                    reward += reward_effect.text.strip() + reward_effect.tail.strip()
+                    reward += reward_header.strip() + reward_effect.strip()
                     break
                 else:
-                    effects.append(effect.text.strip() + effect.tail.strip())
-        if quest != "" and reward != "":
-            effects.append(quest + reward)
+                    effects.append(header.strip() + effect.strip())
+            else:
+                if self._is_stats(line):
+                    key, value = self._convert_stats(line)
+                    stats[key] = value
+                else:
+                    other.append(line.strip())
 
-        return stats, effects, unique_stats, unique_effects
+        return stats, effects, unique_stats, unique_effects, other
 
     """
     取り出したものがstatsかeffectかを判定
@@ -387,26 +314,20 @@ class RiotStaticData(object):
 
         key, value = splitted
         if value.find("%") >= 0:
-            if key in self.PERCENT_STATS_KEYS.keys():
+            if key in PERCENT_STATS_KEYS.keys():
                 return True
             else:
                 return False
-        elif key in self.FLAT_STATS_KEYS.keys():
+        elif key in FLAT_STATS_KEYS.keys():
             return True
         else:
             return False
 
-    def _get_effect_type(self, element):
-        header = element.text.strip()
-
+    def _get_effect_type(self, header):
         if header.find("重複不可") >= 0:
             return EFFECT_TYPES.UNIQUE
         elif (header.find("発動効果") >= 0) or (header.find("自動効果") >= 0):
             return EFFECT_TYPES.NORMAL
-        elif header.find("クエスト") >= 0:
-            return EFFECT_TYPES.QUEST
-        elif header.find("報酬") >= 0:
-            return EFFECT_TYPES.REWARD
         else:
             return EFFECT_TYPES.OTHER
 
@@ -423,13 +344,12 @@ class RiotStaticData(object):
         key, value = contents.split(" ")
 
         if value.find("%") >= 0:
-            return self.PERCENT_STATS_KEYS[key], value.replace("%", "")
+            return PERCENT_STATS_KEYS[key], value.replace("%", "")
         else:
-            return self.FLAT_STATS_KEYS[key], value
+            return FLAT_STATS_KEYS[key], value
 
     """
-    item["effect"]内に格納された@Effect*Amount@
-    effectの中身を置換する
+    item["effect"]内に格納された@Effect*Amount@でeffectの中身を置換する
     """
     def _insert_effect_amount(self, effects, item):
         if not "effect" in item:
@@ -445,7 +365,15 @@ class RiotStaticData(object):
                         amount,
                         str(float(item["effect"][key]) * int(value))
                     )
+                elif stripped.find("Value") >= 0:
+                    lower_value = item["effect"]["Effect1Amount"]
+                    upper_value = item["effect"]["Effect2Amount"]
+                    effects[i] = effects[i].replace(
+                        "@Value@",
+                        "{} - {}".format(lower_value, upper_value)
+                    )
                 else:
+                    print(stripped)
                     effects[i] = effects[i].replace(amount, item["effect"][stripped])
         return effects
 

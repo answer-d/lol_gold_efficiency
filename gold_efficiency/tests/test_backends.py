@@ -24,6 +24,6 @@ class RiotStaticDataTest(TestCase):
             item = items["data"][id]
 
             if "description" in item:
-                stats, effect, unique_stats, unique_effects =\
+                stats, effect, unique_stats, unique_effects, other =\
                     rsd._parse_description(item["description"])
-                # print(unique_effects)
+                print(other)
