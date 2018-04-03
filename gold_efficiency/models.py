@@ -110,8 +110,6 @@ class Effect(models.Model):
 
     def get_gold_value(self, **kwargs) -> float:
         """金銭価値を計算して返す"""
-        self._validation_check_input(**kwargs)
-
         if self.is_evaluable(**kwargs):
             formula = self.formula
             for k, v in kwargs.items():
@@ -122,8 +120,6 @@ class Effect(models.Model):
             return eval(formula)
         else:
             return 0
-
-    # TODO:formulaセット時にヴァリデーションチェックする仕組み入れる
 
     def get_min_gold_value(self):
         """金銭価値の最小値を取得する"""
@@ -161,17 +157,8 @@ class Effect(models.Model):
         else:
             return False
 
-    def _validation_check_formula(self, formula):
-        """formulaセット時に実施するヴァリデーションチェック"""
-        # ホワイトリスト方式で実装します
-        pass
-
-    def _validation_check_input(self, **kwargs):
-        """金銭価値算出の引数に対して実施するヴァリデーションチェック"""
-        # ホワイトリスト方式で実装します
-        pass
-
-    def _deduplication(self, obj: list) -> list:
+    @staticmethod
+    def _deduplication(obj: list) -> list:
         """リストから重複要素を排除して返す"""
         seen = set()
         seen_add = seen.add
