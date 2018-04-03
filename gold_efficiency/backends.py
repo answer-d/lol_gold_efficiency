@@ -8,6 +8,7 @@ import lxml.html
 import lxml.etree
 from .models import PatchVersion, Item, StatsBase, Effect, Tag
 from riotwatcher import RiotWatcher
+from tqdm import tqdm
 
 
 class EFFECT_TYPES(Enum):
@@ -174,7 +175,7 @@ class RiotStaticData(object):
         if not StatsBase.objects.filter(patch_version=version).exists():
             self.update_stats_base(items, version)
 
-        for id in items["data"].keys():
+        for id in tqdm(items["data"].keys()):
             item = items["data"][id]
 
             # サモリフ以外除外
