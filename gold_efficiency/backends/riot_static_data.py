@@ -3,12 +3,13 @@
 import sys
 import re
 import json
-import logging
-import lxml.html
-import lxml.etree
+from copy import copy
+from tqdm import tqdm
 from riotwatcher import RiotWatcher
+
 from ..models import PatchVersion, Item, StatsBase, Effect, Tag
 from .constant_values import *
+from .parsed_effect import ParsedEffect
 
 
 class RiotStaticData(object):
@@ -20,15 +21,6 @@ class RiotStaticData(object):
         self.api_key = api_key
         self.region = region
         self.locale = locale
-
-        # ロガー（今は使ってない）
-        # ファイルハンドラのログはmanage.pyと同階層に生成される
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
-        # handler = logging.FileHandler(filename="backends.log", encoding="utf-8", mode="w")
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.DEBUG)
-        self.logger.addHandler(handler)
 
     """
     StatsBaseを計算して、指定されたバージョンとしてDBに登録する
@@ -50,8 +42,7 @@ class RiotStaticData(object):
 
                 # アイテムデータの取得
                 item_data = self._parse_item(item, version)
-                stats, effects, unique_stats, unique_effects, other =\
-                    self._parse_description(item["description"])
+                effects = self._parse_description(item["description"])
 
                 # 金銭効率ベース計算
                 # 1. アイテムのトータル金額を取得して評価額としてセット
@@ -59,8 +50,10 @@ class RiotStaticData(object):
                 # 3. 2を繰り返し、Statsが単一になるまでやる
                 # 4. 最終的に残った単一のStatsが計算しようとしているStatsのキーと一致する(はず)
                 # 5. 得られたStatsのamountで評価額を割った値が金銭効率ベースになる
-                all_stats = stats.copy()
-                all_stats.update(unique_stats)
+                all_stats = {
+                    stats.stats_pair[0]: stats.stats_pair[1]
+                    for stats in effects if stats.formula is not None
+                }
                 valuation_gold = item_data["total_cost"]
 
                 while 1 < len(all_stats):
@@ -97,9 +90,7 @@ class RiotStaticData(object):
         if not StatsBase.objects.filter(patch_version=version).exists():
             self.update_stats_base(items, version)
 
-        n_item = len(items["data"])
-        for i, id in enumerate(items["data"].keys()):
-            sys.stdout.write("\r{} / {}".format(i + 1, n_item))
+        for id in tqdm(items["data"].keys()):
             item = items["data"][id]
 
             # サモリフ以外除外
@@ -122,64 +113,30 @@ class RiotStaticData(object):
                 # スタッツ/エフェクト登録
                 if "description" in item:
                     # パース
-                    stats, effects, unique_stats, unique_effects, other =\
-                        self._parse_description(item["description"])
+                    parsed_effects = self._parse_description(item["description"])
 
                     # EffectAmountの挿入
-                    effects = self._insert_effect_amount(effects, item)
-                    unique_effects = self._insert_effect_amount(
-                        unique_effects,
-                        item
-                    )
-                    other = self._insert_effect_amount(other, item)
+                    parsed_effects = [
+                        self._insert_effect_amount(effect, item)
+                        for effect in parsed_effects
+                    ]
 
                     # 登録
-                    for name, amount in stats.items():
+                    for effect in parsed_effects:
+                        if effect.formula is None:
+                            is_checked_evaluation = False
+                        else:
+                            is_checked_evaluation = True
                         Effect.objects.update_or_create(
-                            description=str(amount)+name,
-                            is_unique=False,
-                            formula="{} * [{}]".format(str(amount), name),
-                            calc_priority=1,
+                            description=effect.description,
+                            verbose_description=effect.verbose_description,
+                            is_unique=effect.is_unique,
+                            formula=effect.formula,
+                            name=effect.unique_name,
                             is_updated_in_current_patch=False,
-                            is_checked_evaluation=True,
+                            is_checked_evaluation=is_checked_evaluation,
                             item=item_record,
-                        )
-                    for effect in effects:
-                        Effect.objects.update_or_create(
-                            description=effect,
-                            is_unique=False,
-                            calc_priority=1,
-                            is_updated_in_current_patch=False,
-                            is_checked_evaluation=False,
-                            item=item_record,
-                        )
-                    for name, amount in unique_stats.items():
-                        Effect.objects.update_or_create(
-                            description=str(amount) + name,
-                            is_unique=True,
-                            formula="{} * [{}]".format(str(amount), name),
-                            calc_priority=1,
-                            is_updated_in_current_patch=False,
-                            is_checked_evaluation=True,
-                            item=item_record,
-                        )
-                    for effect in unique_effects:
-                        Effect.objects.update_or_create(
-                            description=effect,
-                            is_unique=True,
-                            calc_priority=1,
-                            is_updated_in_current_patch=False,
-                            is_checked_evaluation=False,
-                            item=item_record,
-                        )
-                    for effect in other:
-                        Effect.objects.update_or_create(
-                            description=effect,
-                            is_unique=False,
-                            calc_priority=1,
-                            is_updated_in_current_patch=False,
-                            is_checked_evaluation=False,
-                            item=item_record,
+                            calc_priority=1
                         )
 
     """
@@ -253,48 +210,71 @@ class RiotStaticData(object):
     description内のstatsおよびeffectのパース
     """
     def _parse_description(self, description):
-        description = description.replace("<br>", "\n")
-        description = re.sub("<.*?>", "", description)
-        description = description.split("\n")
-        description = [line for line in description if line.strip() != ""]
+        splitted_desc = description.split("<br><br>")
 
-        stats = dict()
-        effects = list()
-        unique_stats = dict()
-        unique_effects = list()
-        other = list()
+        # <br><br>で区切られたやつを頑張ってつなげたりする
+        concated_desc = list()
+        index = 0
+        for desc in splitted_desc:
+            tags = self._get_contain_tags(desc)
+            if (
+                "stats" not in tags
+                and "active" not in tags
+                and "passive" not in tags
+                and "unique" not in tags
+                and index > 0
+            ):
+                concated_desc[index - 1] += desc
+            else:
+                concated_desc.append(desc)
+                index += 1
 
-        for line in description:
+        # <br>で区切る
+        raw_description = list()
+        for desc in concated_desc:
+            splitted = desc.split("<br>")
+            raw_description.extend(splitted)
+
+        # タグを消したりなんだり
+        description = [re.sub("<.*?>", "", line) for line in raw_description]
+
+        # 中身を見始める
+        parsed_effect_list = list()
+        for line, raw_line in zip(description, raw_description):
+            parsed_effect = ParsedEffect()
+            parsed_effect.description = line
+            parsed_effect.verbose_description = raw_line
+
             if line.find(": ") >= 0:
                 header, effect = line.split(": ", 1)
                 effect_type = self._get_effect_type(header)
 
+                # ユニーク判定
                 if effect_type == EFFECT_TYPES.UNIQUE:
-                    if self._is_stats(effect):
-                        key, value = self._convert_stats(effect)
-                        unique_stats[key] = value
-                    else:
-                        unique_effects.append(
-                            header.strip() + effect.strip()
-                        )
-                elif effect_type == EFFECT_TYPES.NORMAL:
-                    if self._is_stats(effect):
-                        key, value = self._convert_stats(effect)
-                        stats[key] = value
-                    else:
-                        effects.append(
-                            header.strip() + effect.strip()
-                        )
-                else:
-                    effects.append(header.strip() + effect.strip())
-            else:
-                if self._is_stats(line):
-                    key, value = self._convert_stats(line)
-                    stats[key] = value
-                else:
-                    other.append(line.strip())
+                    parsed_effect.is_unique = True
 
-        return stats, effects, unique_stats, unique_effects, other
+                # 固有名存在判定
+                if header.find("-") >= 0:
+                    _, unique_name = header.split("-")
+                    parsed_effect.unique_name = unique_name.strip()
+
+                # スタッツ判定
+                if self._is_stats(effect):
+                    name, amount = self._convert_stats(effect)
+                    formula = "{} * [{}]".format(str(amount), name)
+                    parsed_effect.formula = formula
+                    parsed_effect.stats_pair = (name, amount)
+            else:
+                # スタッツ判定
+                if self._is_stats(line):
+                    name, amount = self._convert_stats(line)
+                    formula = "{} * [{}]".format(str(amount), name)
+                    parsed_effect.formula = formula
+                    parsed_effect.stats_pair = (name, amount)
+
+            parsed_effect_list.append(parsed_effect)
+
+        return parsed_effect_list
 
     """
     取り出したものがstatsかeffectかを判定
@@ -316,6 +296,10 @@ class RiotStaticData(object):
         else:
             return False
 
+    """
+    effectの行頭を見て種類を判定する
+    あんまり使ってない
+    """
     def _get_effect_type(self, header):
         if header.find("重複不可") >= 0:
             return EFFECT_TYPES.UNIQUE
@@ -344,30 +328,46 @@ class RiotStaticData(object):
     """
     item["effect"]内に格納された@Effect*Amount@でeffectの中身を置換する
     """
-    def _insert_effect_amount(self, effects, item):
+    def _insert_effect_amount(self, effect, item):
         if not "effect" in item:
-            return effects
+            return effect
 
-        for i, effect in enumerate(effects):
-            for amount in re.findall(r"@[^@@]*@", effect):
-                stripped = amount.strip("@")
+        for amount in re.findall(r"@[^@@]*@", effect.description):
+            stripped = amount.strip("@")
 
-                if stripped.find("*") >= 0:
-                    key, value = stripped.split("*")
-                    effects[i] = effects[i].replace(
-                        amount,
-                        str(float(item["effect"][key]) * int(value))
-                    )
-                elif stripped.find("Value") >= 0:
+            # 掛け算があるのである
+            if stripped.find("*") >= 0:
+                key, times = stripped.split("*")
+                value = float(item["effect"][key]) * int(times)
+                effect.description = effect.description.replace(
+                    amount, str(value)
+                )
+            # ゴールド袋は許さない
+            elif stripped.find("Value") >= 0:
                     lower_value = item["effect"]["Effect1Amount"]
                     upper_value = item["effect"]["Effect2Amount"]
-                    effects[i] = effects[i].replace(
+                    effect.description = effect.description.replace(
                         "@Value@",
                         "{} - {}".format(lower_value, upper_value)
                     )
-                else:
-                    effects[i] = effects[i].replace(amount, item["effect"][stripped])
-        return effects
+            # 一般的な場合
+            else:
+                effect.description = effect.description.replace(
+                    amount, item["effect"][stripped]
+                )
+
+        return effect
+
+    def _get_contain_tags(self, sentence):
+        tags = list()
+
+        for tag in re.findall(r"<[^<>]*>", sentence):
+            tag_name = tag.strip("<").strip(">")
+            tags.append(tag_name)
+
+        return tags
+
+
 
 # --- テスト -------------------------------------------------------------------
 

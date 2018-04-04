@@ -24,6 +24,8 @@ class RiotStaticDataTest(TestCase):
             item = items["data"][id]
 
             if "description" in item:
-                stats, effect, unique_stats, unique_effects, other =\
-                    rsd._parse_description(item["description"])
-                print(other)
+                parsed_effects = rsd._parse_description(item["description"])
+                parsed_effects = [
+                    rsd._insert_effect_amount(effect, item)
+                    for effect in parsed_effects
+                ]
