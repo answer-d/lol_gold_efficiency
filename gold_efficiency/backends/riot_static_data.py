@@ -241,6 +241,10 @@ class RiotStaticData(object):
         # 中身を見始める
         parsed_effect_list = list()
         for line, raw_line in zip(description, raw_description):
+            # 空白行はスルー
+            if line == "":
+                continue
+
             parsed_effect = ParsedEffect()
             parsed_effect.description = line
             parsed_effect.verbose_description = raw_line
