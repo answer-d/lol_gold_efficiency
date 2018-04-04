@@ -224,7 +224,7 @@ class RiotStaticData(object):
                 and "unique" not in tags
                 and index > 0
             ):
-                concated_desc[index - 1] += desc
+                concated_desc[index - 1] += "\n" + desc
             else:
                 concated_desc.append(desc)
                 index += 1
