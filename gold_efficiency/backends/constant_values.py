@@ -67,6 +67,11 @@ BASE_ITEMS_LIST = [
     }
 ]
 
+USELESS_TAGS = [
+    "rules",
+    "groupLimit"
+]
+
 MAPID_SUMMONERS_RIFT = "11"
 
 ITEMIMG_BASE_URL = r"http://ddragon.leagueoflegends.com/cdn/{}/img/item/{}.png"

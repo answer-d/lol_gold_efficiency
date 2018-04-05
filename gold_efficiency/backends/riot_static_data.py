@@ -210,6 +210,10 @@ class RiotStaticData(object):
     description内のstatsおよびeffectのパース
     """
     def _parse_description(self, description):
+        # いらないタグと中身を消す
+        for tag in USELESS_TAGS:
+            description = self._drop_tag(description, tag)
+
         splitted_desc = description.split("<br><br>")
 
         # <br><br>で区切られたやつを頑張ってつなげたりする
@@ -371,6 +375,8 @@ class RiotStaticData(object):
 
         return tags
 
+    def _drop_tag(self, description, tag):
+        return re.sub(r"<{}>.*?</{}>".format(tag, tag), "", description)
 
 
 # --- テスト -------------------------------------------------------------------
