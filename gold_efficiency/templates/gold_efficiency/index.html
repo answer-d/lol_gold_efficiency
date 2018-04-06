@@ -1,85 +1,12 @@
 {% extends "gold_efficiency/base.html" %}
 
-{% load i18n static %}
-
-{% block title %}アイテム一覧{% endblock title %}
-
-{% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/datatables.min.css' %}" />
-{% endblock extra_css %}
+{% block title %}Gold Efficiency{% endblock title %}
 
 {% block content %}
-{% if item_list %}
-    <table class="table" id="itemtable">
-    <caption>patch {{ patch_version.version_str }}</caption>
-    <thead class="thead-dark">
-        <tr>
-            <th>アイテム</th>
-            <th>合計金額 (G)</th>
-            <th>金銭価値 (G)</th>
-            <th>金銭効率 (%)</th>
-            <th>素材</th>
-            <th>合成先</th>
-            <th>詳細</th>
-            <th>Tier</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for item in item_list %}
-        <tr>
-            <td>
-                <img src="{{ item.img }}" alt="{{ item.name }}" width="32" height="32" />
-                <br>{{ item.name }}
-            </td>
-            <td>{{ item.total_cost }}</td>
-            <td>{{ item.get_gold_value|floatformat }}</td>
-            <td>{{ item.get_gold_efficiency|floatformat }}%</td>
-            <td>
-                {% for from_item in item.from_items %}
-                    <img src="{{ from_item.img }}" alt="{{ from_item.name }}" width="32" height="32" />
-                {% endfor %}
-            </td>
-            <td>
-                {% for into_item in item.into_items %}
-                    <img src="{{ into_item.img }}" alt="{{ into_item.name }}" width="32" height="32" />
-                {% endfor %}
-            </td>
-            <td>
-                {% for e in item.effect_set.all %}
-                    <dl class="row">
-                        <dd class="col-8">{{ e.description }}</dd>
-                        {% if e.is_evaluable %}
-                            <dd class="col-4">{{ e.get_gold_value|floatformat }}</dd>
-                        {% else %}
-                            <dd class="col-4"><span class="badge badge-secondary">評価不可</span></dd>
-                        {% endif %}
-                    </dl>
-                {% endfor %}
-            </td>
-            <td>{{ item.depth }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-    </table>
-{% else %}
-    <p>No Items are available.</p>
-{% endif %}
+<h1>Index</h1>
+<div>
+    <a>
+        <a href="{% url 'gold_efficiency:itemlist' %}">アイテム一覧</a>
+    </p>
+</div>
 {% endblock content %}
-
-{% block extra_js %}
-<script type="text/javascript" src="{% static 'gold_efficiency/js/datatables.min.js' %}"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        $('#itemtable').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Japanese.json",
-            },
-            "aoColumnDefs": [
-                // { "bSearchable": false, "aTargets": [ 1, 2, 3, 4 ] },
-                { "bSortable": false, "aTargets": [ 4, 5, 6 ] },
-                // { "bVisible":false, "aTargets": [  ] },
-            ],
-        });
-    });
-</script>
-{% endblock extra_js %}
