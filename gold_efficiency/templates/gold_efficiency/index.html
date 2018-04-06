@@ -5,12 +5,13 @@
 {% block title %}アイテム一覧{% endblock title %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/datatables.min.css' %}" />
+<!-- <link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/datatables.min.css' %}" /> -->
+<link rel="stylesheet" type="text/css" href="{% static 'gold_efficiency/css/index.css' %}" />
 {% endblock extra_css %}
 
 {% block content %}
 {% if item_list %}
-    <table class="table" id="itemtable">
+    <!-- <table class="table table-responsive" id="itemtable">
     <caption>patch {{ patch_version.version_str }}</caption>
     <thead class="thead-dark">
         <tr>
@@ -24,43 +25,71 @@
             <th>Tier</th>
         </tr>
     </thead>
-    <tbody>
-    {% for item in item_list %}
-        <tr>
-            <td>
-                <img src="{{ item.img }}" alt="{{ item.name }}" width="32" height="32" />
-                <br>{{ item.name }}
-            </td>
-            <td>{{ item.total_cost }}</td>
-            <td>{{ item.get_gold_value|floatformat }}</td>
-            <td>{{ item.get_gold_efficiency|floatformat }}%</td>
-            <td>
-                {% for from_item in item.from_items %}
-                    <img src="{{ from_item.img }}" alt="{{ from_item.name }}" width="32" height="32" />
-                {% endfor %}
-            </td>
-            <td>
-                {% for into_item in item.into_items %}
-                    <img src="{{ into_item.img }}" alt="{{ into_item.name }}" width="32" height="32" />
-                {% endfor %}
-            </td>
-            <td>
+    <tbody> -->
+    <div class="card-columns">
+      {% for item in item_list %}
+          <div class="card bg-light mb-3">
+            <div class="card-header">{{ item.name }}</div>
+            <div class="d-flex">
+              <div>
+                <div class="itemicon">
+                  <img src="{{ item.img }}" alt="{{ item.name }}" class="img-fluid rounded-circle" />
+                  <p class="font-weight-bold text-light">{{ item.get_gold_efficiency|floatformat }}%</p>
+                </div>
+                <div class="card-body">
+                  <p class="card-text">Total: {{ item.total_cost }}</p>
+                  <p class="card-text">Value: {{ item.get_gold_value|floatformat }}</p>
+                </div>
+              </div>
+              <div>
                 {% for e in item.effect_set.all %}
-                    <dl class="row">
-                        <dd class="col-8">{{ e.description }}</dd>
-                        {% if e.is_evaluable %}
-                            <dd class="col-4">{{ e.get_gold_value|floatformat }}</dd>
-                        {% else %}
-                            <dd class="col-4"><span class="badge badge-secondary">評価不可</span></dd>
-                        {% endif %}
-                    </dl>
+                  <p class="card-text">{{ e.description }}</p>
+                  {% if e.is_evaluable %}
+                      <p class="card-text">{{ e.get_gold_value|floatformat }}</p>
+                  {% else %}
+                      <p class="card-text"><span class="badge badge-secondary">評価不可</span></p>
+                  {% endif %}
                 {% endfor %}
-            </td>
-            <td>{{ item.depth }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-    </table>
+                <p class="card-text">{{ item.depth }}</p>
+              </div>
+            </div>
+          </div>
+      {% endfor %}
+    </div>
+          <!-- <tr>
+              <td>
+                  <img src="{{ item.img }}" alt="{{ item.name }}" class="img-fluid rounded-circle" />
+                  <br>{{ item.name }}
+              </td>
+              <td>{{ item.total_cost }}</td>
+              <td>{{ item.get_gold_value|floatformat }}</td>
+              <td>{{ item.get_gold_efficiency|floatformat }}%</td>
+              <td>
+                  {% for from_item in item.from_items %}
+                      <img src="{{ from_item.img }}" alt="{{ from_item.name }}" class="img-fluid rounded" />
+                  {% endfor %}
+              </td>
+              <td>
+                  {% for into_item in item.into_items %}
+                      <img src="{{ into_item.img }}" alt="{{ into_item.name }}" class="img-fluid rounded" />
+                  {% endfor %}
+              </td>
+              <td>
+                  {% for e in item.effect_set.all %}
+                      <dl class="row">
+                          <dd class="col-8">{{ e.description }}</dd>
+                          {% if e.is_evaluable %}
+                              <dd class="col-4">{{ e.get_gold_value|floatformat }}</dd>
+                          {% else %}
+                              <dd class="col-4"><span class="badge badge-secondary">評価不可</span></dd>
+                          {% endif %}
+                      </dl>
+                  {% endfor %}
+              </td>
+              <td>{{ item.depth }}</td>
+          </tr> -->
+    <!-- </tbody>
+    </table> -->
 {% else %}
     <p>No Items are available.</p>
 {% endif %}
