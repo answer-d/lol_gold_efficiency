@@ -11,92 +11,75 @@
 
 {% block content %}
 {% if item_list %}
-    <!-- <table class="table table-responsive" id="itemtable">
-    <caption>patch {{ patch_version.version_str }}</caption>
-    <thead class="thead-dark">
-        <tr>
-            <th>アイテム</th>
-            <th>合計金額 (G)</th>
-            <th>金銭価値 (G)</th>
-            <th>金銭効率 (%)</th>
-            <th>素材</th>
-            <th>合成先</th>
-            <th>詳細</th>
-            <th>Tier</th>
-        </tr>
-    </thead>
-    <tbody> -->
-    <div class="card-columns">
+    <div class="grid">
       {% for item in item_list %}
-          <div class="card bg-light mb-3">
-            <div class="card-header">{{ item.name }}</div>
-            <div class="d-flex">
-              <div>
-                <div class="itemicon">
-                  <img src="{{ item.img }}" alt="{{ item.name }}" class="img-fluid rounded-circle" />
-                  <p class="font-weight-bold text-light">{{ item.get_gold_efficiency|floatformat }}%</p>
-                </div>
-                <div class="card-body">
-                  <p class="card-text">Total: {{ item.total_cost }}</p>
-                  <p class="card-text">Value: {{ item.get_gold_value|floatformat }}</p>
-                </div>
+        <div class="card bg-light rounded">
+          <div class="row">
+            <div class="col-sm-3 text-center" id="left-pain">
+              <div class="item-icon text-center">
+                <img src="{{ item.img }}" alt="{{ item.name }}" class="img-fluid rounded-circle" id="item-icon">
+                <p class="text-light text-center">{{ item.get_gold_efficiency|floatformat }}%</p>
               </div>
-              <div>
+              <div class="price">
+                <p id="total">Total<br/>{{ item.total_cost }}G</p>
+                <p id="cost">Value:<br/>{{ item.get_gold_value|floatformat }}G</p>
+              </div>
+            </div>
+            <div class="col-sm-9" id="right-pain">
+              <div class="row">
+                <div class="col-sm-10 header-name"><div class="item-name">{{ item.name }}</div></div>
+                {% if item.depth %}
+                  <div class="col-sm-2 header-tier"><div class="tier">Tier: {{ item.depth }}</div></div>
+                {% else %}
+                  <div class="col-sm-2 header-tier"><div class="tier">Tier: 0</div></div>
+                {% endif %}
+              </div>
+              <ul class="list-group w-100" id="effect">
                 {% for e in item.effect_set.all %}
-                  <p class="card-text">{{ e.description }}</p>
-                  {% if e.is_evaluable %}
-                      <p class="card-text">{{ e.get_gold_value|floatformat }}</p>
-                  {% else %}
-                      <p class="card-text"><span class="badge badge-secondary">評価不可</span></p>
-                  {% endif %}
+                  <div class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                    <div class="description">{{ e.description }}</div>
+                    {% if e.is_evaluable %}
+                      <div class="tier">{{ e.get_gold_value|floatformat }}G</div>
+                    {% else %}
+                      <div><span class="badge badge-secondary">評価不可</span></div>
+                    {% endif %}
+                    </div>
+                  </div>
                 {% endfor %}
-                <p class="card-text">{{ item.depth }}</p>
+              </ul>
+              {% if item.from_items %}
+              <div class="tier">from:</div>
+              {% endif %}
+              <div class="d-flex flex-wrap">
+                {% for from_item in item.from_items %}
+                  <div class="small-icon">
+                    <img src="{{ from_item.img }}" alt="{{ from_item.name }}" class="img-fluid rounded" />
+                  </div>
+                {% endfor %}
+              </div>
+              {% if item.into_items %}
+              <div class="tier">into:</div>
+              {% endif %}
+              <div class="d-flex flex-wrap">
+                {% for into_item in item.into_items %}
+                  <div class="small-icon">
+                    <img src="{{ into_item.img }}" alt="{{ into_item.name }}" class="img-fluid rounded" />
+                  </div>
+                {% endfor %}
               </div>
             </div>
           </div>
+        </div>
       {% endfor %}
     </div>
-          <!-- <tr>
-              <td>
-                  <img src="{{ item.img }}" alt="{{ item.name }}" class="img-fluid rounded-circle" />
-                  <br>{{ item.name }}
-              </td>
-              <td>{{ item.total_cost }}</td>
-              <td>{{ item.get_gold_value|floatformat }}</td>
-              <td>{{ item.get_gold_efficiency|floatformat }}%</td>
-              <td>
-                  {% for from_item in item.from_items %}
-                      <img src="{{ from_item.img }}" alt="{{ from_item.name }}" class="img-fluid rounded" />
-                  {% endfor %}
-              </td>
-              <td>
-                  {% for into_item in item.into_items %}
-                      <img src="{{ into_item.img }}" alt="{{ into_item.name }}" class="img-fluid rounded" />
-                  {% endfor %}
-              </td>
-              <td>
-                  {% for e in item.effect_set.all %}
-                      <dl class="row">
-                          <dd class="col-8">{{ e.description }}</dd>
-                          {% if e.is_evaluable %}
-                              <dd class="col-4">{{ e.get_gold_value|floatformat }}</dd>
-                          {% else %}
-                              <dd class="col-4"><span class="badge badge-secondary">評価不可</span></dd>
-                          {% endif %}
-                      </dl>
-                  {% endfor %}
-              </td>
-              <td>{{ item.depth }}</td>
-          </tr> -->
-    <!-- </tbody>
-    </table> -->
 {% else %}
     <p>No Items are available.</p>
 {% endif %}
 {% endblock content %}
 
 {% block extra_js %}
-<script type="text/javascript" src="{% static 'gold_efficiency/js/datatables.min.js' %}"></script>
+<!-- <script type="text/javascript" src="{% static 'gold_efficiency/js/datatables.min.js' %}"></script>
 <script type="text/javascript">
     $(document).ready(function() {
         $('#itemtable').DataTable({
@@ -110,5 +93,7 @@
             ],
         });
     });
-</script>
+</script> -->
+<script type="text/javascript" src="{% static 'gold_efficiency/js/isotope.pkgd.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'gold_efficiency/js/index.js' %}"></script>
 {% endblock extra_js %}

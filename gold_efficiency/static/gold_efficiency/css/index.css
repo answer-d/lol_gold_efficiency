@@ -2,22 +2,88 @@
   column-count: 5;
 }
 
-.itemicon {
+.card {
+  width: 18rem;
+  height: auto;
+  float:left;
+}
+
+#right-pain {
+  padding-top: 10px;
+  padding-right: 30px;
+}
+
+#left-pain {
+  padding-top: 10px;
+  padding-left: 30px;
+  padding-right: 0;
+}
+
+#item-icon {
+  max-width: 100%;
+  height: auto;
+  filter: contrast(50%);
+}
+
+.item-icon {
   position: relative;
 }
 
-.itemicon p {
+.item-icon p {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  -ms-transform: translate(-50%,-50%);
-  -webkit-transform: translate(-50%,-50%);
-  transform: translate(-50%,-50%);
-  margin:0;
-  padding:0;
-  /*文字の装飾は省略*/
+  top: 25%;
+  left: -10%;
+  width: 120%;
+  font-size: 1.0vw;
+  font-weight: bold;
+  opacity: 0.95;
+  }
+
+.price {
+  padding-top: 0.6vh;
+  padding-bottom: 0.6vh;
+}
+.price p {
+  font-size: 0.9vw;
+  font-weight: bold;
 }
 
-.itemicon img {
-  width: 100%;
+.header-name {
+  display: flex;
+	align-items: center;
+  padding: 0;
+  padding-left: 15px;
+}
+
+.header-tier {
+  display: flex;
+	align-items: center;
+  padding: 0;
+}
+
+.item-name {
+  font-size: 1.0vw;
+  font-weight: bold;
+}
+
+.tier {
+  font-size: 0.6vw;
+  font-weight: bold;
+}
+
+.list-group-item {
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0.7vw;
+  padding-right: 0.0vw;
+  padding-left: 0.0vw;
+}
+
+.small-icon {
+  padding-top: 0.2vw;
+  padding-bottom: 0.2vw;
+}
+
+.small-icon img {
+  max-width: 1.5vw;
 }
