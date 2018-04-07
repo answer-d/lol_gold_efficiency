@@ -47,7 +47,7 @@
             <td>
                 {% for e in item.effect_set.all %}
                     <dl class="row">
-                        <dd class="col-8">{{ e.description }}</dd>
+                        <dd class="col-8">{{ e.description|linebreaksbr }}</dd>
                         {% if e.is_evaluable %}
                             <dd class="col-4">{{ e.get_gold_value|floatformat }}</dd>
                         {% else %}
