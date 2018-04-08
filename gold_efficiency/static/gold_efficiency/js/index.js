@@ -1,8 +1,6 @@
-$(function() {
-	$('.grid').isotope({
-	itemSelector: '.card',
-	masonry: {
-		columnWidth: 100
-	}
-	});
+$('.box-container').isotope({
+  itemSelector:'.box',
+  masonry: {
+    columnWidth:100
+  }
 });

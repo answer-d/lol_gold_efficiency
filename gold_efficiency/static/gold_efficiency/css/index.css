@@ -1,11 +1,8 @@
-.card-columns {
-  column-count: 5;
-}
 
-.card {
-  width: 18rem;
-  height: auto;
-  float:left;
+.box {
+  box-shadow:0 0 10px #fff, 0 0 10px #ccc, 0 0 10px #aaa;
+  width: 20%;
+  margin: 0.5vw;
 }
 
 #right-pain {
