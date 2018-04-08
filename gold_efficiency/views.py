@@ -1,8 +1,6 @@
-from django.http import HttpResponse
 from django.shortcuts import render
 from .models import PatchVersion, Item
-from .backends import RiotStaticData
-
+from .forms import ItemInputKeysForm
 
 # Create your views here.
 
@@ -24,9 +22,13 @@ def itemlist(request):
 
 
 def itemdetail(request, item_id):
-    # TODO:インプットのヴァリデーション
-
     item = Item.objects.get(pk=item_id)
+    form = ItemInputKeysForm(item, request.GET)
+
+    if not form.is_valid():
+        message = "おやぁ～？インプットが不正だねぇ～？"
+        return render(request, 'gold_efficiency/error.html', {"message": message})
+
     input_params = dict()
     for k, v in request.GET.items():
         if v:
@@ -34,6 +36,7 @@ def itemdetail(request, item_id):
 
     context = {
         'item': item,
+        'form': form,
         'input': input_params,
     }
 

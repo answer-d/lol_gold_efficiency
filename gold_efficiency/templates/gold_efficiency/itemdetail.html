@@ -10,11 +10,8 @@
     {% if item.get_input_keys %}
         条件<br />
         <form action="{% url 'gold_efficiency:itemdetail' item.pk %}" method="get">
-            {% for key in item.get_input_keys %}
-                <label>{{ key }}</label>
-                <input type="text" name="{{ key }}" value="{{ input|lookup:key }}" />
-                <br />
-            {% endfor %}
+            {{ form }}
+            <br />
             <input type="submit" value="アップデーーーーーーーーート！！！！" />
         </form>
         <!--{% if input %}{{ input }}{% endif %}-->
@@ -43,7 +40,11 @@
     {% for effect in item.effect_set.all %}
         説明:{{ effect.description }}<br />
         計算式:{{ effect.formula }}<br />
-        金銭価値:{{ effect|gold_value:input|floatformat }}G<br />
+        {% if effect|is_evaluable:input %}
+            金銭価値:{{ effect|gold_value:input|floatformat }}G<br />
+        {% else %}
+            金銭価値:<span class="badge badge-secondary">評価不可</span><br />
+        {% endif %}
         <br />
     {% endfor %}
     <hr />

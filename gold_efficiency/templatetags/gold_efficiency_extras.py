@@ -28,3 +28,11 @@ def gold_efficiency(value, args):
         return value.get_gold_efficiency(**dict(args))
     else:
         return value.get_gold_efficiency()
+
+
+@register.filter(name='is_evaluable')
+def is_evaluable(value, args):
+    if args:
+        return value.is_evaluable(**dict(args))
+    else:
+        return value.is_evaluable()

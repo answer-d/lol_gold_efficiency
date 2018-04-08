@@ -272,7 +272,6 @@ class RiotStaticData(object):
         self._set_formula("自動効果(重複不可) - マナチャージ:マナ消費ごとに最大マナが6増加(12秒につき最大3回まで)。", "{STACK} * 6 * [Mana]")
         self._set_formula("発動効果(重複不可) :1チャージ消費して体力125を12秒間かけて回復する。最大2チャージで、ショップを訪れることで補充できる。", "2 * (125 * [Health])")
 
-
     @staticmethod
     def _set_formula(effect_description, formula):
         for effect in Effect.objects.filter(description__contains=effect_description):
