@@ -6,6 +6,13 @@ from django.db import models
 # Create your models here.
 
 
+def _deduplication(obj: list) -> list:
+    """リストから重複要素を排除して返す"""
+    seen = set()
+    seen_add = seen.add
+    return [x for x in obj if x not in seen and not seen_add(x)]
+
+
 class PatchVersion(models.Model):
     """パッチバージョン"""
     version_str = models.CharField(max_length=20)
@@ -59,6 +66,13 @@ class Item(models.Model):
             gold_efficiency = 0
         return gold_efficiency
 
+    def get_input_keys(self) -> list:
+        """get_gold_value()を呼ぶ時に渡すべきキーのリストを返す"""
+        keys_list = []
+        for effect in self.effect_set.all():
+            keys_list.extend(effect.get_input_keys())
+        return _deduplication(keys_list)
+
     def _get_from_items(self):
         """from_itemをItemオブジェクトのリストとして返す"""
         from_items = []
@@ -110,10 +124,15 @@ class Effect(models.Model):
 
     def get_gold_value(self, **kwargs) -> float:
         """金銭価値を計算して返す"""
+        required_keys = self.get_input_keys()
+        # print("{}({}) - is_evaluable?:{}".format(self.description, kwargs, self.is_evaluable(**kwargs)))
         if self.is_evaluable(**kwargs):
             formula = self.formula
             for k, v in kwargs.items():
-                formula = formula.replace("{" + k + "}", v)
+                # print("  kwargs処理 : {} - {}".format(self.description, k))
+                if k in required_keys and v:
+                    # print("    {}を{}にreplace".format(k, v))
+                    formula = formula.replace("{" + k + "}", v)
             for stats_base in self.item.patch_version.stats_base_set.all():
                 formula = formula.replace("[" + stats_base.name + "]", str(stats_base.gold_value_per_amount))
 
@@ -132,7 +151,7 @@ class Effect(models.Model):
     def get_input_keys(self) -> list:
         """get_gold_value()を呼ぶ時に渡すべきキーのリストを返す"""
         if self.formula is not None:
-            return self._deduplication(re.findall(r"{(.*?)}", self.formula))
+            return _deduplication(re.findall(r"{(.*?)}", self.formula))
         else:
             return []
 
@@ -147,19 +166,12 @@ class Effect(models.Model):
         """kwargsが与えられた時評価可能かどうかを返す"""
         if self.formula is not None:
             required_keys = self.get_input_keys()
-            if len(required_keys) > 0:
-                if len(kwargs) > 0:
-                    return reduce(lambda x, y: x and y, [x in required_keys for x in kwargs])
+            if required_keys:
+                if kwargs:
+                    return reduce(lambda x, y: x and y, [x in kwargs.keys() for x in required_keys])
                 else:
                     return False
             else:
                 return True
         else:
             return False
-
-    @staticmethod
-    def _deduplication(obj: list) -> list:
-        """リストから重複要素を排除して返す"""
-        seen = set()
-        seen_add = seen.add
-        return [x for x in obj if x not in seen and not seen_add(x)]

@@ -1,0 +1,55 @@
+{% extends "gold_efficiency/base.html" %}
+
+{% load gold_efficiency_extras %}
+
+{% block title %}アイテム詳細 - Gold Efficiency{% endblock title %}
+
+{% block content %}
+<h1>アイテム詳細</h1>
+{% if item %}
+    {% if item.get_input_keys %}
+        条件<br />
+        <form action="{% url 'gold_efficiency:itemdetail' item.pk %}" method="get">
+            {{ form }}
+            <br />
+            <input type="submit" value="アップデーーーーーーーーート！！！！" />
+        </form>
+        <!--{% if input %}{{ input }}{% endif %}-->
+    <hr />
+    {% endif %}
+    <img src="{{ item.img }}" alt="{{ item.name }}" width="32" height="32" />{{ item.name }}<br />
+    コスト(売却金額):{{ item.total_cost }}G ({{ item.sell_gold }}G)<br />
+    金銭価値:{{ item|gold_value:input|floatformat }}G<br />
+    金銭効率:{{ item|gold_efficiency:input|floatformat }}%<br />
+    派生元:
+    {% for from_item in item.from_items %}
+        <a href="{% url 'gold_efficiency:itemdetail' from_item.pk %}">
+            <img src="{{ from_item.img }}" alt="{{ from_item.name }}" width="32" height="32" />
+        </a>
+    {% endfor %}
+    <br />
+    派生先:
+    {% for into_item in item.into_items %}
+        <a href="{% url 'gold_efficiency:itemdetail' into_item.pk %}">
+            <img src="{{ into_item.img }}" alt="{{ into_item.name }}" width="32" height="32" />
+        </a>
+    {% endfor %}
+    <br />
+    タグ:{% for tag in item.tags.all %}{{ tag.name }} {% endfor %}<br />
+    <hr />
+    {% for effect in item.effect_set.all %}
+        説明:{{ effect.description }}<br />
+        計算式:{{ effect.formula }}<br />
+        {% if effect|is_evaluable:input %}
+            金銭価値:{{ effect|gold_value:input|floatformat }}G<br />
+        {% else %}
+            金銭価値:<span class="badge badge-secondary">評価不可</span><br />
+        {% endif %}
+        <br />
+    {% endfor %}
+    <hr />
+    patch {{ item.patch_version.version_str }}
+    {% else %}
+    <p>This Item is not Available.</p>
+{% endif %}
+{% endblock content %}
