@@ -16,6 +16,11 @@ var $box = $('.box-container').isotope({
       let str = $(elem).find('.total').text().match(/\d*G/)[0];
       return parseInt(str.replace('G', ''));
     },
+    tier: function (elem) {
+      let tier = $(elem).find('.tier').text().replace('Tier: ','');
+      console.log(tier)
+      return parseInt(tier);
+    },
   },
   filter: function() {
     return qsRegex ? $(this).text().match( qsRegex ) : true;

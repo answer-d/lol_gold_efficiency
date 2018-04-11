@@ -67,6 +67,11 @@
   font-weight: bold;
 }
 
+.small-font {
+  font-size: 0.6vw;
+  font-weight: bold;
+}
+
 .list-group-item {
   padding-top: 0;
   padding-bottom: 0;

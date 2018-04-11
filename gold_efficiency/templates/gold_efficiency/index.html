@@ -40,7 +40,7 @@
                     <div class="d-flex w-100 justify-content-between">
                     <div class="description">{{ e.description }}</div>
                     {% if e.is_evaluable %}
-                      <div class="tier">{{ e.get_gold_value|floatformat }}G</div>
+                      <div class="small-font">{{ e.get_gold_value|floatformat }}G</div>
                     {% else %}
                       <div><span class="badge badge-secondary">評価不可</span></div>
                     {% endif %}
@@ -49,7 +49,7 @@
                 {% endfor %}
               </ul>
               {% if item.from_items %}
-              <div class="tier">from:</div>
+              <div class="small-font">from:</div>
               {% endif %}
               <div class="d-flex flex-wrap">
                 {% for from_item in item.from_items %}
@@ -59,7 +59,7 @@
                 {% endfor %}
               </div>
               {% if item.into_items %}
-              <div class="tier">into:</div>
+              <div class="small-font">into:</div>
               {% endif %}
               <div class="d-flex flex-wrap">
                 {% for into_item in item.into_items %}
