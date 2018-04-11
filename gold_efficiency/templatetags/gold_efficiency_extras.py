@@ -3,17 +3,6 @@ from django import template
 register = template.Library()
 
 
-@register.filter(name='lookup')
-def lookup(value, arg, default=""):
-    if value:
-        if arg in value:
-            return value[arg]
-        else:
-            return default
-    else:
-        return default
-
-
 @register.filter(name='gold_value')
 def gold_value(value, args):
     if args:

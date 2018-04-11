@@ -1,9 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-import sys
 import re
 import json
-from copy import copy
 from tqdm import tqdm
 from riotwatcher import RiotWatcher
 
@@ -138,6 +136,56 @@ class RiotStaticData(object):
                             item=item_record,
                             calc_priority=1
                         )
+
+        # effectの個別formula投入
+        # とりあえず入れるため用なので、いずれ消す予定
+        self._set_formula("自動効果(重複不可) - 素早さ: このアイテムが追加で10%のクールダウン短縮を獲得。",
+                          "10 * [CooldownReduction]")
+        self._set_formula("自動効果(重複不可) - 畏怖: 最大マナの3%に等しい魔力を得る。消費マナの25%を回復。",
+                          "{MAX_MANA} * 0.03 * [AbilityPower]")  # 更にambiguousにもしたい（消費マナの25%回復効果もあるので）
+        self._set_formula("マナチャージ: マナ消費ごとに最大マナが8増加(最大750マナ)。この効果は12秒につき最大3回まで発生。",
+                          "{STACK} * 8 * [Mana]")
+        self._set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが12増加(最大750マナ)。この効果は12秒につき最大3回まで発生。",
+                          "{STACK} * 12 * [Mana]")
+        self._set_formula("自動効果(重複不可): 通常攻撃ごとに、攻撃速度 +8%、増加攻撃力 +4%、魔力 +4%を得る。効果は5秒間持続する(効果は最大6回までスタック)。",
+                          "{STACK} * ({AS} * 8 * [AttackSpeed] + {ADDITIONAL_AD} * 0.04 * [AttackDamage] + {AP} * 0.04 * [AbilityPower])")
+        self._set_formula("発動効果(重複不可): 1チャージ消費して体力125とマナ75を12秒間かけて回復する。",
+                          "3 * (125 * [Health] + 75 * [Mana])")  # ambiguous
+        self._set_formula("自動効果(重複不可): ユニット1体をキルするごとに物理防御と魔力がそれぞれ0.5増加する。この効果は最大30回までスタックする。",
+                          "{STACK} * 0.5 * ([Armor] + [AbilityPower])")
+        self._set_formula("自動効果(重複不可) : ユニット1体をキルするごとに最大体力が5増加する。このボーナスは最大20回までスタックする。",
+                          "{STACK} * 5 * [Health]")
+        self._set_formula("自動効果(重複不可) - ドレッド: 栄光1スタックごとに魔力3を得る。",
+                          "{STACK} * 3 * [AbilityPower]")
+        self._set_formula("自動効果: 5秒毎に体力を6回復。",
+                          "6 * [HealthRegeneration]")
+        self._set_formula("自動効果(重複不可) - 畏怖: 最大マナの2%に等しい増加攻撃力を得る。消費マナの15%を回復。",
+                          "{MAX_MANA} * 0.02 * [AttackDamage]")
+        self._set_formula("自動効果(重複不可) - マナチャージ: 通常攻撃かマナを消費するごとに最大マナが5増加(最大750マナ)。この効果は12秒につき最大3回まで発生する。",
+                          "{STACK} * 5 * [Mana]")
+        self._set_formula("自動効果(重複不可) - マナチャージ: 通常攻撃かマナを消費するごとに最大マナが6増加(最大750マナ)。この効果は12秒につき最大3回まで発生する。",
+                          "{STACK} * 6 * [Mana]")
+        self._set_formula("自動効果(重複不可) - 調和: 基本マナ自動回復の上昇率が、基本体力自動回復の上昇率にも適用される。",
+                          "{MANA_REG_MOD} * [HealthRegeneration]")
+        self._set_formula("自動効果(重複不可) - ドレッド: 栄光1スタックごとに5の魔力を得る。栄光スタックが15以上になると、移動速度が10%増加する。",
+                          "{STACK} * 5 * [AbilityPower] + {STACK}//15 * 10 * [PercentMovementSpeed]")
+        self._set_formula("自動効果(重複不可) : 魔力を40%増加させる。",
+                          "{AP} * 0.4 * [AbilityPower]")
+        self._set_formula("自動効果: 1スタックごとに体力 +20、マナ +10、魔力 +4を獲得 (最大で体力 +200、マナ +100、魔力 +40)。1分ごとに1スタックを獲得 (最大10スタック)。",
+                          "{STACK} * (20 * [Health] + 10 * [Mana] + 4 * [AbilityPower])")
+        self._set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが4増加(12秒につき最大3回まで)。",
+                          "{STACK} * 4 * [Mana]")
+        self._set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが6増加(12秒につき最大3回まで)。",
+                          "{STACK} * 6 * [Mana]")
+        self._set_formula("発動効果(重複不可) : 1チャージ消費して体力125を12秒間かけて回復する。最大2チャージで、ショップを訪れることで補充できる。",
+                          "2 * (125 * [Health])")
+
+    @staticmethod
+    def _set_formula(effect_description, formula):
+        for effect in Effect.objects.filter(description__contains=effect_description):
+            effect.formula = formula
+            effect.save()
+            print("[{}] {} : {}".format(effect.item.name, effect_description, formula))
 
     """
     バージョンをDBに登録する

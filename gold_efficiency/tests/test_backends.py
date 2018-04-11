@@ -2,7 +2,7 @@
 
 import os
 from django.test import TestCase
-from ..backends import RiotStaticData
+from ..backends.riot_static_data import RiotStaticData
 
 
 ROOT = os.path.dirname(os.path.abspath(__file__))

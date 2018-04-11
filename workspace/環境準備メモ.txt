@@ -5,7 +5,7 @@ Python 3.6.4
 2.0.3
 
 
-■ 環境準備方法
+■ 環境準備方法(ローカル)
 # 仮想環境構築
 python -m venv <仮想環境パス>
 <仮想環境パス>/Scripts/activate
@@ -13,38 +13,62 @@ python -m venv <仮想環境パス>
 # モジュールインストール(django-bootstrap4はいずれ使う予定)
 pip install django
 pip install riotwatcher
-pip install lxml
+pip install tqdm
+pip install django-heroku
 
-# DB作成(sqlite.dbが作成される)
+# DB作成(db.sqlite3が作成される)
 python manage.py makemigrations
 python manage.py migrate
 
-# サーバ起動(admin/P@ssw0rd)
+# admin画面用ユーザ作成
+python manage.py createsuperuser
+
+# アイテムデータインポート(ローカルのjsonから)
+python manage.py updateitems 8.6.1 -f ./gold_efficiency/static/gold_efficiency/json/items_ver.8.6.1_na1.json
+
+# サーバ起動
 python manage.py runserver
 
 # http://127.0.0.1:8000/ にアクセス！
-# DBの中身見たかったらadmin画面で。http://127.0.0.1:8000/admin（admin/P@ssw0rd）
+# DBの中身見たかったらadmin画面で。http://127.0.0.1:8000/admin/
 
 
-■ 新エフェクトモデルテスト用コマンド
-# とりあえずテスト用にデータ入れてみた軍団があるので触ってみて
-python manage.py loaddata fixtures/20180401_sample_new_effect.json
-python manage.py shell
+■ 環境準備方法(heroku private)  ※ Heroku CLIはインストールしておいてね
+# Herokuログイン
+heroku login
 
-from gold_efficiency.models import *
-mejai = Item.objects.get(name="メジャイ・ソウルスティーラー")
-roa = Item.objects.get(name="ロッド・オブ・エイジス")
-guinsoo = Item.objects.get(name="グインソー・レイジブレード")
+# アプリケーション作成(初回のみ)
+heroku create <app name>
 
-mejai_effect = mejai.effect_set.all()[2]
-roa_effect = roa.effect_set.all()[3]
-guinsoo_effect = guinsoo.effect_set.all()[4]
+# アプリケーションの名前変更(オプショナル)
+heroku rename <new app name>  [--app <app name>]
 
-mejai_effect.formula
-mejai_effect.get_gold_value(STACK="1")
-mejai_effect.get_gold_value(STACK="10")
-mejai_effect.min_input
-mejai_effect.get_min_gold_value()
-mejai_effect.max_input
-mejai_effect.get_max_gold_value()
-…みたいな感じ！
+# 既存のアプリケーションをリモートリポジトリにする(アプリケーション切替はこれで実施)
+heroku git:remote -a <app name>
+
+# コミット作成(変更したら)
+git add .
+git commit -m "Herokuで動くようにした"
+
+# buildpackの設定(いらない)
+#heroku buildpacks:set heroku/python
+
+# Herokuにpush
+git push heroku master
+# ブランチをpushする場合はこっち
+git push heroku <branch name>:master
+
+# Postgres Add-on追加
+heroku addons:create heroku-postgresql:hobby-dev
+
+# Herokuでマイグレーション
+heroku run python manage.py migrate
+
+# アイテムデータインポート(ローカルのjsonから)
+heroku run python manage.py updateitems 8.6.1 -f ./gold_efficiency/static/gold_efficiency/json/items_ver.8.6.1_na1.json
+
+# dyno指定(いらないかも)
+heroku ps:scale web=1
+
+# 動作確認
+heroku open
