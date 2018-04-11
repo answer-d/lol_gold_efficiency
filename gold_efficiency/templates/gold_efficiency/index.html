@@ -18,11 +18,11 @@
             <div class="col-sm-3 text-center" id="left-pain">
               <div class="item-icon text-center">
                 <img src="{{ item.img }}" alt="{{ item.name }}" class="img-fluid rounded-circle" id="item-icon">
-                <p class="text-light text-center">{{ item.get_gold_efficiency|floatformat }}%</p>
+                <p class="text-light text-center efficiency">{{ item.get_gold_efficiency|floatformat }}%</p>
               </div>
               <div class="price">
-                <p id="total">Total<br/>{{ item.total_cost }}G</p>
-                <p id="cost">Value:<br/>{{ item.get_gold_value|floatformat }}G</p>
+                <p class="total">Cost:<br/>{{ item.total_cost }}G</p>
+                <p class="value">Value:<br/>{{ item.get_gold_value|floatformat }}G</p>
               </div>
             </div>
             <div class="col-sm-9" id="right-pain">
