@@ -1,0 +1,22 @@
+{
+  "name": "gold_efficiency_test",
+  "description": "",
+  "scripts": {
+    "postdeploy": "python manage.py migrate"
+  },
+  "env": {
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "addons": [
+    "heroku-postgresql"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
