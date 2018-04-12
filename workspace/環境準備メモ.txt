@@ -33,66 +33,94 @@ python manage.py runserver
 # DBの中身見たかったらadmin画面で。http://127.0.0.1:8000/admin/
 
 
-■ Herokuデプロイ方法
+■ 本番デプロイまでの流れ(Heroku)
 ・GithubにてmasterへのPRを作成する
-  → Review Appが自動作成される
+  → Review Appが自動作成される、app.jsonで指定した初期化コマンドも実行されてるっぽい
 
-・GithubにてPRを承認する
+・Review Appで確認後、GithubにてPRを承認する
   → Staging環境へ自動デプロイされる
 
-・Herokuにてpromoteを実行
-  → やり方要確認
+・ここでStagingのDBマイグレートなどの処理が必要かも(app.jsonには指定してるんだけど、自動で動くのか不明)
+
+・Stagingにて最終確認し、HerokuにてProductionへのpromoteを実行
+  → Webブラウザもしくはコマンドで実行可能
+     heroku pipelines:promote -a <app name>
+  ※ <app name>にはStagingのAPP名を入れる
+
+・ProductionでDBマイグレートなどの処理
 
 
+■ 環境準備方法(Heroku環境にて自分でAP作成してみたい場合)
+ちなみにコマンドでやってることはWebブラウザ経由でもできるよ、Herokuすごい
 
-■ 環境準備方法(Heroku：自分でAP作成してみたい場合)
 # Heroku CLIインストール
-Herokuのドキュメント見てがんばる
+ドキュメント見てがんばる
 
 # Herokuログイン
 heroku login
 
-# アプリケーション作成
-heroku create <app name>
+# アプリケーション作成(StagingとProductionの2つ作る)
+heroku create <app name> [-t <team name>]
 
 # アプリケーションの名前変更(オプショナル)
 heroku rename <new app name>  [--app <app name>]
 
 # 既存のアプリケーションをリモートリポジトリにする(アプリケーション切替はこれで実施する)
+# この手順をやらない場合、各コマンドに「-a <app name>」を付けてAP指定する必要がある
+# heroku createしたときは自動で設定されるので実行不要
 heroku git:remote -a <app name>
 
-# コミット作成(コード変更したら)
-git add .
-git commit -m "Herokuで動くようにした"
+# Postgresアドオン追加(Staging/Production両方やる)
+heroku addons:create heroku-postgresql:hobby-dev
 
-# buildpackの設定(いらない)
+  # アプリケーション作成とアドオン追加まとめてできたわ(--addons はカンマ区切りらしい)
+  heroku apps:create <app name> [-t <team name>] --addons heroku-postgresql:hobby-dev
+
+# buildpackの明示的な設定(いらない)
 #heroku buildpacks:set heroku/python
 
-# Herokuにpush
-git push heroku master
-# ブランチをpushする場合はこっち
-git push heroku <branch name>:master
+# パイプライン作成
+heroku pipelines:create <pipeline name> -a <staging app name> [-t <team name>]
 
-# Herokuでマイグレーション
-heroku run python manage.py migrate
+# パイプラインにProduction環境のAP登録
+heroku pipelines:add <pipeline name> -a <prod app name> -s production
 
-# アイテムデータインポート(とりあえずローカルのjsonから…)
-heroku run python manage.py updateitems 8.6.1 -f ./gold_efficiency/static/gold_efficiency/json/items_ver.8.6.1_na1.json
+# パイプラインにGithub紐付け
+heroku pipelines:connect <pipeline name> -r answer-d/lol_gold_efficiency
 
-# dyno指定(明示的に指定しなくても動いたから実はいらない)
+# Staging環境にオートデプロイ設定
+# Review App設定
+これらはブラウザでやったZoe
+
+# 上に記載の「本番デプロイまでの流れ」をやる
+
+  #   Herokuでマイグレーション
+  heroku run python manage.py migrate
+
+  # アイテムデータインポート(とりあえずローカルのjsonから…)
+  heroku run python manage.py updateitems 8.6.1 -f ./gold_efficiency/static/gold_efficiency/json/items_ver.8.6.1_na1.json
+
+# dyno指定(明示的に指定しなくても動いたから実はいらないYO)
 heroku ps:scale web=1
 
 # 動作確認
 heroku open
 
 
-# オートデプロイ設定
+■ 直接デプロイしたい場合
+Herokuのgitリポジトリのmasterブランチにpushするとデプロイ対象になるんだよ！
+自動デプロイも、多分内部的にはgithubのリポジトリをHeroku gitにpullかcloneしてるだけなんじゃないかな？と予想
+
+# ローカルリポジトリでコミット作成(コード変更したら)
+git add .
+git commit -m
+
+# Heroku gitにpush
+git push heroku master
+
+  # ブランチをpushする場合はこっち
+  git push heroku <branch name>:master
 
 
-
-# パイプライン作成
-
-# パイプラインにアプリケーション設定
-
-# Review App設定
-
+■ Heroku CLI Reference
+https://devcenter.heroku.com/categories/command-line

@@ -1,6 +1,7 @@
 {
-  "name": "gold_efficiency_test",
+  "name": "Gold Efficiency",
   "description": "",
+  "repository": "https://github.com/answer-d/lol_gold_efficiency",
   "scripts": {
     "postdeploy": "python manage.py migrate"
   },
