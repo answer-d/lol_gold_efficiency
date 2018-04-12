@@ -33,20 +33,35 @@ python manage.py runserver
 # DBの中身見たかったらadmin画面で。http://127.0.0.1:8000/admin/
 
 
-■ 環境準備方法(heroku private)  ※ Heroku CLIはインストールしておいてね
+■ Herokuデプロイ方法
+・GithubにてmasterへのPRを作成する
+  → Review Appが自動作成される
+
+・GithubにてPRを承認する
+  → Staging環境へ自動デプロイされる
+
+・Herokuにてpromoteを実行
+  → やり方要確認
+
+
+
+■ 環境準備方法(Heroku：自分でAP作成してみたい場合)
+# Heroku CLIインストール
+Herokuのドキュメント見てがんばる
+
 # Herokuログイン
 heroku login
 
-# アプリケーション作成(初回のみ)
+# アプリケーション作成
 heroku create <app name>
 
 # アプリケーションの名前変更(オプショナル)
 heroku rename <new app name>  [--app <app name>]
 
-# 既存のアプリケーションをリモートリポジトリにする(アプリケーション切替はこれで実施)
+# 既存のアプリケーションをリモートリポジトリにする(アプリケーション切替はこれで実施する)
 heroku git:remote -a <app name>
 
-# コミット作成(変更したら)
+# コミット作成(コード変更したら)
 git add .
 git commit -m "Herokuで動くようにした"
 
@@ -58,17 +73,26 @@ git push heroku master
 # ブランチをpushする場合はこっち
 git push heroku <branch name>:master
 
-# Postgres Add-on追加
-heroku addons:create heroku-postgresql:hobby-dev
-
 # Herokuでマイグレーション
 heroku run python manage.py migrate
 
-# アイテムデータインポート(ローカルのjsonから)
+# アイテムデータインポート(とりあえずローカルのjsonから…)
 heroku run python manage.py updateitems 8.6.1 -f ./gold_efficiency/static/gold_efficiency/json/items_ver.8.6.1_na1.json
 
-# dyno指定(いらないかも)
+# dyno指定(明示的に指定しなくても動いたから実はいらない)
 heroku ps:scale web=1
 
 # 動作確認
 heroku open
+
+
+# オートデプロイ設定
+
+
+
+# パイプライン作成
+
+# パイプラインにアプリケーション設定
+
+# Review App設定
+
