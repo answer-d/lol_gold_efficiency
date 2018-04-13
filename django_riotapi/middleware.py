@@ -4,6 +4,9 @@ import base64
 
 
 class BasicAuthMiddleware(object):
+    """環境変数「BASICAUTH_USERNAME」が存在する場合、アプリケーションにBasic認証をかけるMiddleware
+    アカウントは「BASICAUTH_USERNAME」から、パスワードは「BASICAUTH_PASSWORD」から拾うぞ"""
+
     def __init__(self, get_response):
         self.get_response = get_response
         # One-time configuration and initialization.
@@ -22,7 +25,8 @@ class BasicAuthMiddleware(object):
 
         return response
 
-    def unauthed(self):
+    @staticmethod
+    def unauthed():
         response = HttpResponse("""<html><title>Auth required</title><body>
         <h1>Authorization Required</h1></body></html""")
         response['WWW-Authenticate'] = 'Basic realm="Development"'
@@ -30,7 +34,7 @@ class BasicAuthMiddleware(object):
         return response
 
     def process_request(self, request):
-        if settings.BASICAUTH_USERNAME:
+        if settings.BASICAUTH_USERNAME is not None:
             if 'HTTP_AUTHORIZATION' not in request.META:
                 return self.unauthed()
             else:
