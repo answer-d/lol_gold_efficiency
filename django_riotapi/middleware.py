@@ -17,9 +17,6 @@ class BasicAuthMiddleware(object):
 
         response = self.process_request(request)
 
-        if not response:
-            response = self.get_response(request)
-
         # Code to be executed for each request/response after
         # the view is called.
 
@@ -48,8 +45,8 @@ class BasicAuthMiddleware(object):
                 username, password = auth.decode('utf-8').split(':', 1)
 
                 if username == settings.BASICAUTH_USERNAME and password == settings.BASICAUTH_PASSWORD:
-                    return None
+                    return self.get_response(request)
 
                 return self.unauthed()
         else:
-            return None
+            return self.get_response(request)
