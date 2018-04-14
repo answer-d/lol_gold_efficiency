@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_riotapi.middleware.BasicAuthMiddleware',  # Staging環境向けBasic認証
 ]
 
 ROOT_URLCONF = 'django_riotapi.urls'
@@ -123,3 +124,7 @@ STATIC_URL = '/static/'
 
 # Herokuデビュー
 django_heroku.settings(locals())
+
+# Basic認証用アカウント/パスを環境変数から拾う
+BASICAUTH_USERNAME = os.environ['BASICAUTH_USERNAME'] if 'BASICAUTH_USERNAME' in os.environ else None
+BASICAUTH_PASSWORD = os.environ['BASICAUTH_PASSWORD'] if 'BASICAUTH_PASSWORD' in os.environ else None

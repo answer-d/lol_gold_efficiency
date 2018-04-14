@@ -1,11 +1,19 @@
 {
   "name": "Gold Efficiency",
-  "description": "",
+  "description": "League of Legends item analyze service",
   "repository": "https://github.com/answer-d/lol_gold_efficiency",
   "scripts": {
-    "postdeploy": "python manage.py migrate"
+    "postdeploy": "python manage.py migrate && echo 'todo: python manage.py updateitems'"
   },
   "env": {
+    "BASICAUTH_USERNAME": {
+      "description": "username for basic authentication",
+      "value": "review_app"
+    },
+    "BASICAUTH_PASSWORD": {
+      "description": "password for basic authentication",
+      "value": "P@ssw0rd"
+    }
   },
   "formation": {
     "web": {
