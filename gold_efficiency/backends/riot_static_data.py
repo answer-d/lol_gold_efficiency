@@ -11,7 +11,6 @@ from .parsed_effect import ParsedEffect
 
 
 class RiotStaticData(object):
-
     """
     コンストラクタ
     """
@@ -21,72 +20,10 @@ class RiotStaticData(object):
         self.locale = locale
 
     """
-    StatsBaseを計算して、指定されたバージョンとしてDBに登録する
-    """
-    def update_stats_base(self, items, version):
-        version = PatchVersion.objects.get(version_str=version)
-
-        # 金銭効率ベースになるアイテムをtier順に処理
-        for base_items in BASE_ITEMS_LIST:
-            for key, value in base_items.items():
-                if StatsBase.objects.filter(patch_version=version, name=key).exists():
-                    continue
-
-                item = items['data'][value]
-
-                # サモリフ以外除外
-                if item["maps"][MAPID_SUMMONERS_RIFT] is False:
-                    continue
-
-                # アイテムデータの取得
-                item_data = self._parse_item(item, version)
-                effects = self._parse_description(item["description"])
-
-                # 金銭効率ベース計算
-                # 1. アイテムのトータル金額を取得して評価額としてセット
-                # 2. Statsの中に既に金銭効率が決まっているものがあれば金銭価値算出して評価額から引く
-                # 3. 2を繰り返し、Statsが単一になるまでやる
-                # 4. 最終的に残った単一のStatsが計算しようとしているStatsのキーと一致する(はず)
-                # 5. 得られたStatsのamountで評価額を割った値が金銭効率ベースになる
-                all_stats = {
-                    stats.stats_pair[0]: stats.stats_pair[1]
-                    for stats in effects if stats.formula is not None
-                }
-                valuation_gold = item_data["total_cost"]
-
-                while 1 < len(all_stats):
-                    for stats_name, stats_amount in list(all_stats.items()):
-                        existing_stats_base = StatsBase.objects.filter(name=stats_name, patch_version=version)
-
-                        if len(existing_stats_base) == 1:
-                            valuation_gold -= existing_stats_base[0].gold_value_per_amount * int(stats_amount)
-                            del all_stats[stats_name]
-
-                # キー一致してるかチェック
-                # TODO : エラー処理
-                if key not in all_stats.keys():
-                    print("＼(^o^)／ｵﾜﾀ")
-                    break
-
-                # 金銭効率ベースの計算
-                gold_value_per_amount = valuation_gold / int(all_stats[key])
-
-                # DB登録
-                StatsBase.objects.update_or_create(
-                    name=key,
-                    gold_value_per_amount=gold_value_per_amount,
-                    patch_version=version
-                )
-
-    """
     itemsのjsonデータを指定されたバージョンとしてDBに登録する
     """
     def update_items(self, items, version):
         version = PatchVersion.objects.get(version_str=version)
-
-        # StatsBaseが登録されてなかったら先に登録する
-        if not StatsBase.objects.filter(patch_version=version).exists():
-            self.update_stats_base(items, version)
 
         for id in tqdm(items["data"].keys()):
             item = items["data"][id]
@@ -95,47 +32,48 @@ class RiotStaticData(object):
             if item["maps"][MAPID_SUMMONERS_RIFT] is False:
                 continue
 
+            # 対象のアイテムが登録されてたらスキップ
+            if Item.objects.filter(patch_version=version, riot_item_id=id).exists():
+                continue
+
             # アイテム登録
-            if not Item.objects.filter(patch_version=version, riot_item_id=id).exists():
-                item_data = self._parse_item(item, version)
-                item_record, _ = Item.objects.update_or_create(**item_data)
+            item_data = self._parse_item(item, version)
+            item_record, _ = Item.objects.update_or_create(**item_data)
 
-                # タグ登録
-                if "tags" in item:
-                    for tag in item["tags"]:
-                        Tag.objects.update_or_create(
-                            name=tag,
-                        )
-                        item_record.tags.add(Tag.objects.get(name=tag))
+            # タグ登録
+            if "tags" in item:
+                for tag in item["tags"]:
+                    tag_record, _ = Tag.objects.get_or_create(name=tag)
+                    item_record.tags.add(tag_record)
 
-                # スタッツ/エフェクト登録
-                if "description" in item:
-                    # パース
-                    parsed_effects = self._parse_description(item["description"])
+            # スタッツ/エフェクト登録
+            if "description" in item:
+                # パース
+                parsed_effects = self._parse_description(item["description"])
 
-                    # EffectAmountの挿入
-                    parsed_effects = [
-                        self._insert_effect_amount(effect, item)
-                        for effect in parsed_effects
-                    ]
+                # EffectAmountの挿入
+                parsed_effects = [
+                    self._insert_effect_amount(effect, item)
+                    for effect in parsed_effects
+                ]
 
-                    # 登録
-                    for effect in parsed_effects:
-                        if effect.formula is None:
-                            is_checked_evaluation = False
-                        else:
-                            is_checked_evaluation = True
-                        Effect.objects.update_or_create(
-                            description=effect.description,
-                            verbose_description=effect.verbose_description,
-                            is_unique=effect.is_unique,
-                            formula=effect.formula,
-                            name=effect.unique_name,
-                            is_updated_in_current_patch=False,
-                            is_checked_evaluation=is_checked_evaluation,
-                            item=item_record,
-                            calc_priority=1
-                        )
+                # 登録
+                for effect in parsed_effects:
+                    if effect.formula is None:
+                        is_checked_evaluation = False
+                    else:
+                        is_checked_evaluation = True
+                    Effect.objects.update_or_create(
+                        description=effect.description,
+                        verbose_description=effect.verbose_description,
+                        is_unique=effect.is_unique,
+                        formula=effect.formula,
+                        name=effect.unique_name,
+                        is_updated_in_current_patch=False,
+                        is_checked_evaluation=is_checked_evaluation,
+                        item=item_record,
+                        calc_priority=1
+                    )
 
         # effectの個別formula投入
         # とりあえず入れるため用なので、いずれ消す予定
@@ -188,9 +126,69 @@ class RiotStaticData(object):
             print("[{}] {} : {}".format(effect.item.name, effect_description, formula))
 
     """
+    StatsBaseを計算して、指定されたバージョンとしてDBに登録する
+    """
+    def update_stats_base(self, items, version):
+        version = PatchVersion.objects.get(version_str=version)
+
+        # 金銭効率ベースになるアイテムをtier順に処理
+        for base_items in BASE_ITEMS_LIST:
+            for key, value in base_items.items():
+                item = items['data'][value]
+
+                # サモリフ以外除外
+                if item["maps"][MAPID_SUMMONERS_RIFT] is False:
+                    continue
+
+                # 既に登録されてるStatsBaseだったらスキップ
+                if StatsBase.objects.filter(patch_version=version, name=key).exists():
+                    continue
+
+                # アイテムデータの取得
+                item_data = self._parse_item(item, version)
+                effects = self._parse_description(item["description"])
+
+                # 金銭効率ベース計算
+                # 1. アイテムのトータル金額を取得して評価額としてセット
+                # 2. Statsの中に既に金銭効率が決まっているものがあれば金銭価値算出して評価額から引く
+                # 3. 2を繰り返し、Statsが単一になるまでやる
+                # 4. 最終的に残った単一のStatsが計算しようとしているStatsのキーと一致する(はず)
+                # 5. 得られたStatsのamountで評価額を割った値が金銭効率ベースになる
+                all_stats = {
+                    stats.stats_pair[0]: stats.stats_pair[1]
+                    for stats in effects if stats.formula is not None
+                }
+                valuation_gold = item_data["total_cost"]
+
+                while 1 < len(all_stats):
+                    for stats_name, stats_amount in list(all_stats.items()):
+                        existing_stats_base = StatsBase.objects.filter(name=stats_name, patch_version=version)
+
+                        if len(existing_stats_base) == 1:
+                            valuation_gold -= existing_stats_base[0].gold_value_per_amount * int(stats_amount)
+                            del all_stats[stats_name]
+
+                # キー一致してるかチェック
+                # TODO : エラー処理
+                if key not in all_stats.keys():
+                    print("＼(^o^)／ｵﾜﾀ")
+                    break
+
+                # 金銭効率ベースの計算
+                gold_value_per_amount = valuation_gold / int(all_stats[key])
+
+                # DB登録
+                StatsBase.objects.update_or_create(
+                    name=key,
+                    gold_value_per_amount=gold_value_per_amount,
+                    patch_version=version
+                )
+
+    """
     バージョンをDBに登録する
     """
-    def update_versions(self, versions):
+    @staticmethod
+    def update_versions(versions):
         if not isinstance(versions, list):
             versions = [versions]
 

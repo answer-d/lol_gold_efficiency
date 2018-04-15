@@ -128,3 +128,6 @@ django_heroku.settings(locals())
 # Basic認証用アカウント/パスを環境変数から拾う
 BASICAUTH_USERNAME = os.environ['BASICAUTH_USERNAME'] if 'BASICAUTH_USERNAME' in os.environ else None
 BASICAUTH_PASSWORD = os.environ['BASICAUTH_PASSWORD'] if 'BASICAUTH_PASSWORD' in os.environ else None
+
+# RiotAPIキーを環境変数から拾う
+RIOT_API_KEY = os.environ['RIOT_API_KEY'] if 'RIOT_API_KEY' in os.environ else None
