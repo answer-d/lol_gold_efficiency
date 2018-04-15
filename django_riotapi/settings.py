@@ -125,9 +125,44 @@ STATIC_URL = '/static/'
 # Herokuデビュー
 django_heroku.settings(locals())
 
+# ログレベル設定を環境変数から拾う(環境変数がなかったらDEBUGとする)
+DJANGO_LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
+
+# logger設定
+LOGGING = {
+    'version': 1,  # 固定
+    'formatters': {  # 出力フォーマットの指定
+        'all': {  # 'all'という名前の出力フォーマット定義
+            'format': "%(asctime)s %(module)s %(process)d %(thread)d [%(levelname)s] %(message)s"
+        },
+        'simple': {
+            'format': "%(levelname)s %(message)s"
+        },
+    },
+    'handlers': {  # ログの出し方の設定
+        'file': {  # 'file'という名前のログ出力設定、ファイル書き出し
+            'level': 'ERROR',  # ERROR以上のみ(ログ流れ防止)。TODO: herokuでファイル書き出しできるか要確認
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django.log'),
+            'formatter': 'all',  # 上で定義した出力フォーマット
+        },
+        'console': {  # こっちは標準出力書き出し
+            'level': 'DEBUG',  # DEBUG以上
+            'class': 'logging.StreamHandler',
+            'formatter': 'all',
+        },
+    },
+    'loggers': {  # どんなloggerがあるかの設定
+        'default': {  # 'default'という名前のlogger定義
+            'handlers': ['file', 'console'],  # 上で定義したやつ
+            'level': DJANGO_LOG_LEVEL,  # どのログレベルから出すか
+        },
+    },
+}
+
 # Basic認証用アカウント/パスを環境変数から拾う
-BASICAUTH_USERNAME = os.environ['BASICAUTH_USERNAME'] if 'BASICAUTH_USERNAME' in os.environ else None
-BASICAUTH_PASSWORD = os.environ['BASICAUTH_PASSWORD'] if 'BASICAUTH_PASSWORD' in os.environ else None
+BASICAUTH_USERNAME = os.getenv('BASICAUTH_USERNAME')
+BASICAUTH_PASSWORD = os.getenv('BASICAUTH_PASSWORD')
 
 # RiotAPIキーを環境変数から拾う
-RIOT_API_KEY = os.environ['RIOT_API_KEY'] if 'RIOT_API_KEY' in os.environ else None
+RIOT_API_KEY = os.getenv('RIOT_API_KEY')

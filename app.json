@@ -3,7 +3,7 @@
   "description": "League of Legends item analyze service",
   "repository": "https://github.com/answer-d/lol_gold_efficiency",
   "scripts": {
-    "postdeploy": "python manage.py migrate && echo 'todo: python manage.py updateitems'"
+    "postdeploy": "python manage.py migrate && python manage.py updateitems"
   },
   "env": {
     "BASICAUTH_USERNAME": {

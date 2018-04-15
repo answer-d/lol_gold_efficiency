@@ -1,11 +1,19 @@
 from django.shortcuts import render
 from .models import PatchVersion, Item
 from .forms import ItemInputKeysForm
+import logging
 
 # Create your views here.
+logger = logging.getLogger("default")
 
 
 def index(request):
+    logger.debug("debug")
+    logger.info("info")
+    logger.warning("warning")
+    logger.error("error")
+    logger.critical("critical")
+
     return render(request, 'gold_efficiency/index.html')
 
 
