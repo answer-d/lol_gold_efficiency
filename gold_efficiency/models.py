@@ -2,10 +2,12 @@ import re
 import json
 from functools import reduce
 from django.db import models
+from .logger import *
 
 # Create your models here.
 
 
+@logging
 def _deduplication(obj: list) -> list:
     """リストから重複要素を排除して返す"""
     seen = set()
@@ -13,6 +15,7 @@ def _deduplication(obj: list) -> list:
     return [x for x in obj if x not in seen and not seen_add(x)]
 
 
+@logging_class
 class PatchVersion(models.Model):
     """パッチバージョン"""
     version_str = models.CharField(max_length=20)
@@ -21,6 +24,7 @@ class PatchVersion(models.Model):
         return self.version_str
 
 
+@logging_class
 class Tag(models.Model):
     """アイテムに紐づくタグ"""
     name = models.CharField(max_length=30)
@@ -30,6 +34,7 @@ class Tag(models.Model):
         return self.name
 
 
+@logging_class
 class Item(models.Model):
     """アイテム"""
     name = models.CharField(max_length=50)
@@ -94,6 +99,7 @@ class Item(models.Model):
     into_items = property(_get_into_items)
 
 
+@logging_class
 class StatsBase(models.Model):
     """ステータスの種類と金銭価値"""
     name = models.CharField(max_length=30)
@@ -104,6 +110,7 @@ class StatsBase(models.Model):
         return self.name
 
 
+@logging_class
 class Effect(models.Model):
     """アイテムに紐づく効果（一対多）"""
     description = models.TextField()

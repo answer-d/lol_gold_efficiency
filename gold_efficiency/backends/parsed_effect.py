@@ -1,10 +1,12 @@
 # -*- encoding: utf-8 -*-
+from ..logger import *
 
 
 """
 アイテムのStats/Effect/Descriptionなどを格納するデータクラス
 パーサの返り値が鬱陶しいので作成
 """
+@logging_class
 class ParsedEffect(object):
     __verbose_description = None
     __description = None

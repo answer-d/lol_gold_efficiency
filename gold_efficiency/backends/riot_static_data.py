@@ -8,8 +8,10 @@ from riotwatcher import RiotWatcher
 from ..models import PatchVersion, Item, StatsBase, Effect, Tag
 from .constant_values import *
 from .parsed_effect import ParsedEffect
+from ..logger import *
 
 
+@logging_class
 class RiotStaticData(object):
     """
     コンストラクタ
@@ -217,8 +219,9 @@ class RiotStaticData(object):
     """
     ローカルファイルから読み込み
     """
-    @classmethod
-    def load_from_json(self, json_path):
+    @staticmethod
+    def load_from_json(json_path):
+    # def load_from_json(self, json_path):
         with open(json_path, "r", encoding="utf-8") as fp:
             data = json.load(fp)
         return data

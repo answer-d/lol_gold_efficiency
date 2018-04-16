@@ -3,8 +3,10 @@
 from django.core.management.base import BaseCommand
 from ...backends.riot_static_data import RiotStaticData
 from django.conf import settings
+from ...logger import *
 
 
+@logging_class
 class Command(BaseCommand):
     """
     引数で指定されたバージョンのアイテムデータを取ってきて登録する
@@ -27,25 +29,25 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         static_data = RiotStaticData(api_key=settings.RIOT_API_KEY)
-        available_versions = static_data.fetch_patch_versions()
-
         file_path = options["file"]
 
         if file_path:
+            logger.debug("file_pathが与えられているよぉ～ : {}".format(file_path))
+
             items = static_data.load_from_json(file_path)
             version = items["version"]
         else:
+            logger.debug("RiotAPIをコールするよぉ～")
+
+            available_versions = static_data.fetch_patch_versions()
             version = options["patch_version"] if options["patch_version"] else available_versions[0]
+            if version not in available_versions:
+                logger.error("(version:{}が)ないです。".format(version))
+                return
             items = static_data.fetch_items(version)
 
-        if version not in available_versions:
-            print("(version:{})ないです。".format(version))
-            return
-
-        print("version:{} detected".format(version))
-
-        print("Item update start.")
+        logger.info("Item update start (version={}).".format(version))
         static_data.update_versions(version)
         static_data.update_stats_base(items, version)
         static_data.update_items(items, version)
-        print("Item update done.")
+        logger.info("Item update done.")

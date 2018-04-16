@@ -1,8 +1,10 @@
 from django.http import HttpResponse
 from django.conf import settings
 import base64
+from gold_efficiency.logger import *
 
 
+@logging_class
 class BasicAuthMiddleware(object):
     """環境変数「BASICAUTH_USERNAME」が存在する場合、アプリケーションにBasic認証をかけるMiddleware
     アカウントは「BASICAUTH_USERNAME」から、パスワードは「BASICAUTH_PASSWORD」から拾うぞ"""

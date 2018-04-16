@@ -133,7 +133,14 @@ LOGGING = {
     'version': 1,  # 固定
     'formatters': {  # 出力フォーマットの指定
         'all': {  # 'all'という名前の出力フォーマット定義
-            'format': "%(asctime)s %(module)s %(process)d %(thread)d [%(levelname)s] %(message)s"
+            'format': " ".join([
+                "%(asctime)s",
+                # "%(pathname)s %(funcName)s(%(lineno)d)",
+                "%(module)s.%(funcName)s(%(lineno)d)",
+                # "%(process)d:%(processName)s",
+                # "%(thread)d:%(threadName)s",
+                "[%(levelname)s] %(message)s",
+            ])
         },
         'simple': {
             'format': "%(levelname)s %(message)s"
@@ -141,7 +148,7 @@ LOGGING = {
     },
     'handlers': {  # ログの出し方の設定
         'file': {  # 'file'という名前のログ出力設定、ファイル書き出し
-            'level': 'ERROR',  # ERROR以上のみ(ログ流れ防止)。TODO: herokuでファイル書き出しできるか要確認
+            'level': 'ERROR',  # ERROR以上のみ(ログ流れ防止目的)。TODO: herokuでファイル書き出しできるか要確認
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'django.log'),
             'formatter': 'all',  # 上で定義した出力フォーマット
@@ -151,12 +158,22 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'all',
         },
+        'file_debug': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django_debug.log'),
+            'formatter': 'all'
+        },
     },
     'loggers': {  # どんなloggerがあるかの設定
         'default': {  # 'default'という名前のlogger定義
             'handlers': ['file', 'console'],  # 上で定義したやつ
             'level': DJANGO_LOG_LEVEL,  # どのログレベルから出すか
         },
+        'debug': {
+            'handlers': ['file_debug', 'console'],
+            'level': DJANGO_LOG_LEVEL,
+        }
     },
 }
 
