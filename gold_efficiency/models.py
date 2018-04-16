@@ -78,6 +78,7 @@ class Item(models.Model):
             keys_list.extend(effect.get_input_keys())
         return _deduplication(keys_list)
 
+    @property
     def _get_from_items(self):
         """from_itemをItemオブジェクトのリストとして返す"""
         from_items = []

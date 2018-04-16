@@ -221,7 +221,6 @@ class RiotStaticData(object):
     """
     @staticmethod
     def load_from_json(json_path):
-    # def load_from_json(self, json_path):
         with open(json_path, "r", encoding="utf-8") as fp:
             data = json.load(fp)
         return data
