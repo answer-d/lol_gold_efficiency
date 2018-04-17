@@ -15,7 +15,6 @@ def _deduplication(obj: list) -> list:
     return [x for x in obj if x not in seen and not seen_add(x)]
 
 
-@logging_class
 class PatchVersion(models.Model):
     """パッチバージョン"""
     version_str = models.CharField(max_length=20)
@@ -24,7 +23,6 @@ class PatchVersion(models.Model):
         return self.version_str
 
 
-@logging_class
 class Tag(models.Model):
     """アイテムに紐づくタグ"""
     name = models.CharField(max_length=30)
@@ -100,7 +98,6 @@ class Item(models.Model):
     into_items = property(_get_into_items)
 
 
-@logging_class
 class StatsBase(models.Model):
     """ステータスの種類と金銭価値"""
     name = models.CharField(max_length=30)

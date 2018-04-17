@@ -14,6 +14,9 @@ def logging(func, self_cut=False):
         logger.debug("{} start. args={}, kwargs={}".format(func.__qualname__, args, kwargs))
         logger.debug(inspect.getfullargspec(func))
 
+        logger.debug("me:{}, fu:{}, mo:{}".format(
+            inspect.ismethod(func), inspect.isfunction(func), inspect.ismodule(func)))
+
         rtn = func(*args[1:], **kwargs) if self_cut else func(*args, **kwargs)
 
         logger.debug("{} end. return={}".format(func.__qualname__, rtn))
