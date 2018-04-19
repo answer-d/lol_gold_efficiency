@@ -6,7 +6,6 @@ from django.conf import settings
 from ...logger import *
 
 
-@logging_class
 class Command(BaseCommand):
     """
     引数で指定されたバージョンのアイテムデータを取ってきて登録する
@@ -19,6 +18,7 @@ class Command(BaseCommand):
         "-fが与えられた場合はパッチバージョンの指定は不要だよ。\n" \
         "Usage: python manage.py updateitems [%パッチバージョン%] [-f %ファイルパス%]"
 
+    @logging
     def add_arguments(self, parser):
         parser.add_argument(
             "-p", "--patch_version", type=str, required=False, default=None
@@ -27,6 +27,7 @@ class Command(BaseCommand):
             "-f", "--file", type=str, required=False, default=None
         )
 
+    @logging
     def handle(self, *args, **options):
         static_data = RiotStaticData(api_key=settings.RIOT_API_KEY)
         file_path = options["file"]

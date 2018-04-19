@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 import os
 import django_heroku
 
-# import sys
-# sys.setrecursionlimit(10000)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -128,8 +126,8 @@ STATIC_URL = '/static/'
 # Herokuデビュー
 django_heroku.settings(locals())
 
-# ログレベル設定を環境変数から拾う(環境変数がなかったらDEBUGとする)
-DJANGO_LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
+# ログレベル設定を環境変数から拾う(環境変数がなかったらINFOとする)
+DJANGO_LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'INFO')
 
 # logger設定
 LOGGING = {
@@ -175,7 +173,7 @@ LOGGING = {
         },
         'debug': {
             'handlers': ['file_debug', 'console'],
-            'level': DJANGO_LOG_LEVEL,
+            'level': 'DEBUG',
         }
     },
 }

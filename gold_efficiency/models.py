@@ -32,7 +32,6 @@ class Tag(models.Model):
         return self.name
 
 
-@logging_class
 class Item(models.Model):
     """アイテム"""
     name = models.CharField(max_length=50)
@@ -51,6 +50,7 @@ class Item(models.Model):
     def __str__(self):
         return self.name
 
+    @logging
     def get_gold_value(self, **kwargs):
         """アイテムの金銭価値を取得する"""
         # アイテムに紐づく効果の金銭価値を全て評価して足し合わせる
@@ -61,6 +61,7 @@ class Item(models.Model):
             gold_value = 0
         return gold_value
 
+    @logging
     def get_gold_efficiency(self, **kwargs):
         """アイテムの金銭効率を取得する"""
         try:
@@ -69,6 +70,7 @@ class Item(models.Model):
             gold_efficiency = 0
         return gold_efficiency
 
+    @logging
     def get_input_keys(self) -> list:
         """get_gold_value()を呼ぶ時に渡すべきキーのリストを返す"""
         keys_list = []
@@ -76,7 +78,7 @@ class Item(models.Model):
             keys_list.extend(effect.get_input_keys())
         return _deduplication(keys_list)
 
-    @property
+    @logging
     def _get_from_items(self):
         """from_itemをItemオブジェクトのリストとして返す"""
         from_items = []
@@ -87,6 +89,7 @@ class Item(models.Model):
         return from_items
     from_items = property(_get_from_items)
 
+    @logging
     def _get_into_items(self):
         """into_itemをItemオブジェクトのリストとして返す"""
         into_items = []
@@ -108,7 +111,6 @@ class StatsBase(models.Model):
         return self.name
 
 
-@logging_class
 class Effect(models.Model):
     """アイテムに紐づく効果（一対多）"""
     description = models.TextField()
@@ -127,6 +129,7 @@ class Effect(models.Model):
     def __str__(self):
         return self.description
 
+    @logging
     def get_gold_value(self, **kwargs) -> float:
         """金銭価値を計算して返す"""
         required_keys = self.get_input_keys()
@@ -145,14 +148,17 @@ class Effect(models.Model):
         else:
             return 0
 
+    @logging
     def get_min_gold_value(self):
         """金銭価値の最小値を取得する"""
         return self.get_gold_value(**json.loads(self.min_input))
 
+    @logging
     def get_max_gold_value(self):
         """金銭価値の最大値を取得する"""
         return self.get_gold_value(**json.loads(self.max_input))
 
+    @logging
     def get_input_keys(self) -> list:
         """get_gold_value()を呼ぶ時に渡すべきキーのリストを返す"""
         if self.formula is not None:
@@ -160,6 +166,7 @@ class Effect(models.Model):
         else:
             return []
 
+    @logging
     def get_stats_base_names(self) -> list:
         """formulaにかかれているStatsBaseの名前のリストを返す"""
         if self.formula is not None:
@@ -167,6 +174,7 @@ class Effect(models.Model):
         else:
             return []
 
+    @logging
     def is_evaluable(self, **kwargs) -> bool:
         """kwargsが与えられた時評価可能かどうかを返す"""
         if self.formula is not None:
