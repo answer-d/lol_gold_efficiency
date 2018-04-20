@@ -8,12 +8,6 @@ from .logger import *
 
 @logging
 def index(request):
-    logger.debug("debug")
-    logger.info("info")
-    logger.warning("warning")
-    logger.error("error")
-    logger.critical("critical")
-
     return render(request, 'gold_efficiency/index.html')
 
 

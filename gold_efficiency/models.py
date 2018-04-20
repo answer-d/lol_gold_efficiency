@@ -133,17 +133,16 @@ class Effect(models.Model):
     def get_gold_value(self, **kwargs) -> float:
         """金銭価値を計算して返す"""
         required_keys = self.get_input_keys()
-        # print("{}({}) - is_evaluable?:{}".format(self.description, kwargs, self.is_evaluable(**kwargs)))
         if self.is_evaluable(**kwargs):
             formula = self.formula
             for k, v in kwargs.items():
-                # print("  kwargs処理 : {} - {}".format(self.description, k))
                 if k in required_keys and v:
-                    # print("    {}を{}にreplace".format(k, v))
+                    print("    {}を{}にreplace".format(k, v))
                     formula = formula.replace("{" + k + "}", v)
             for stats_base in self.item.patch_version.stats_base_set.all():
                 formula = formula.replace("[" + stats_base.name + "]", str(stats_base.gold_value_per_amount))
 
+            logger.debug("eval({})".format(formula))
             return eval(formula)
         else:
             return 0
