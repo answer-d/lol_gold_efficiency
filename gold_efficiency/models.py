@@ -7,7 +7,6 @@ from .logger import *
 # Create your models here.
 
 
-@logging
 def _deduplication(obj: list) -> list:
     """リストから重複要素を排除して返す"""
     seen = set()
@@ -78,7 +77,6 @@ class Item(models.Model):
             keys_list.extend(effect.get_input_keys())
         return _deduplication(keys_list)
 
-    @logging
     def _get_from_items(self):
         """from_itemをItemオブジェクトのリストとして返す"""
         from_items = []
@@ -89,7 +87,6 @@ class Item(models.Model):
         return from_items
     from_items = property(_get_from_items)
 
-    @logging
     def _get_into_items(self):
         """into_itemをItemオブジェクトのリストとして返す"""
         into_items = []

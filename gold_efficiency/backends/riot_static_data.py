@@ -235,7 +235,6 @@ class RiotStaticData(object):
     """
     itemの基本データをパース
     """
-    @logging
     def _parse_item(self, item, patch_version):
         version_str = str(patch_version)
 
@@ -262,7 +261,6 @@ class RiotStaticData(object):
     """
     description内のstatsおよびeffectのパース
     """
-    @logging
     def _parse_description(self, description):
         # いらないタグと中身を消す
         for tag in USELESS_TAGS:
@@ -341,7 +339,6 @@ class RiotStaticData(object):
     """
     取り出したものがstatsかeffectかを判定
     """
-    @logging
     def _is_stats(self, contents):
         contents = contents.strip()
         splitted = contents.split(" ")
@@ -363,7 +360,6 @@ class RiotStaticData(object):
     effectの行頭を見て種類を判定する
     あんまり使ってない
     """
-    @logging
     def _get_effect_type(self, header):
         if header.find("重複不可") >= 0:
             return EFFECT_TYPES.UNIQUE
@@ -379,7 +375,6 @@ class RiotStaticData(object):
     ex.)
     stats, value = "スタッツ value"
     """
-    @logging
     def _convert_stats(self, contents):
         contents = contents.strip()
         contents = contents.replace("+", "")
@@ -393,7 +388,6 @@ class RiotStaticData(object):
     """
     item["effect"]内に格納された@Effect*Amount@でeffectの中身を置換する
     """
-    @logging
     def _insert_effect_amount(self, effect, item):
         if not "effect" in item:
             return effect
@@ -424,7 +418,6 @@ class RiotStaticData(object):
 
         return effect
 
-    @logging
     def _get_contain_tags(self, sentence):
         tags = list()
 
@@ -434,7 +427,6 @@ class RiotStaticData(object):
 
         return tags
 
-    @logging
     def _drop_tag(self, description, tag):
         return re.sub(r"<{}>.*?</{}>".format(tag, tag), "", description)
 

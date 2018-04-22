@@ -5,11 +5,11 @@ import inspect
 # logger = getLogger("default")
 logger = getLogger("debug")
 
-logger.debug("debug")
-logger.info("info")
-logger.warning("warning")
-logger.error("error")
-logger.critical("critical")
+# logger.debug("debug")
+# logger.info("info")
+# logger.warning("warning")
+# logger.error("error")
+# logger.critical("critical")
 
 
 def logging(func):
