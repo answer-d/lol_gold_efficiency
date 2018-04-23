@@ -13,6 +13,14 @@
     "BASICAUTH_PASSWORD": {
       "description": "password for basic authentication",
       "value": "P@ssw0rd"
+    },
+    "RIOT_API_KEY": {
+      "description": "riot api key",
+      "value": "hoge"
+    },
+    "DJANGO_LOG_LEVEL": {
+      "description": "log level for django",
+      "value": "INFO"
     }
   },
   "formation": {

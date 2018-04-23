@@ -138,8 +138,8 @@ LOGGING = {
                 "%(asctime)s",
                 # "%(pathname)s %(funcName)s(%(lineno)d)",
                 "%(module)s.%(funcName)s(%(lineno)d)",
-                # "%(process)d:%(processName)s",
-                # "%(thread)d:%(threadName)s",
+                "%(process)d:%(processName)s",
+                "%(thread)d:%(threadName)s",
                 "[%(levelname)s] %(message)s",
             ])
         },
@@ -172,9 +172,9 @@ LOGGING = {
             'level': DJANGO_LOG_LEVEL,  # どのログレベルから出すか
         },
         'debug': {
-            'handlers': ['file_debug', 'console'],
+            'handlers': ['file', 'file_debug', 'console'],
             'level': 'DEBUG',
-        }
+        },
     },
 }
 

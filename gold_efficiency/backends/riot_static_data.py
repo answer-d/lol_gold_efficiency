@@ -41,7 +41,10 @@ class RiotStaticData(object):
 
             # アイテム登録
             item_data = self._parse_item(item, version)
-            item_record, _ = Item.objects.update_or_create(**item_data)
+            item_record, created = Item.objects.update_or_create(**item_data)
+
+            if created:
+                logger.info("Item:{} - created".format(item_record.name))
 
             # タグ登録
             if "tags" in item:
@@ -66,7 +69,7 @@ class RiotStaticData(object):
                         is_checked_evaluation = False
                     else:
                         is_checked_evaluation = True
-                    Effect.objects.update_or_create(
+                    effect_record, created = Effect.objects.update_or_create(
                         description=effect.description,
                         verbose_description=effect.verbose_description,
                         is_unique=effect.is_unique,
@@ -78,13 +81,17 @@ class RiotStaticData(object):
                         calc_priority=1
                     )
 
+                    if created:
+                        logger.info("Effect:{} created".format(
+                            "\\n".join(effect_record.description.splitlines())))
+
         # effectの個別formula投入
         # とりあえず入れるため用なので、いずれ消す予定
         def _set_formula(effect_description, formula):
             for effect in Effect.objects.filter(description__contains=effect_description):
                 effect.formula = formula
                 effect.save()
-                print("[{}] {} : {}".format(effect.item.name, effect_description, formula))
+                logger.debug("[{}] {} : {}".format(effect.item.name, effect_description, formula))
 
         _set_formula("自動効果(重複不可) - 素早さ: このアイテムが追加で10%のクールダウン短縮を獲得。",
                      "10 * [CooldownReduction]")
@@ -180,11 +187,15 @@ class RiotStaticData(object):
                 gold_value_per_amount = valuation_gold / int(all_stats[key])
 
                 # DB登録
-                StatsBase.objects.update_or_create(
+                stats_base_record, created = StatsBase.objects.update_or_create(
                     name=key,
                     gold_value_per_amount=gold_value_per_amount,
                     patch_version=version
                 )
+
+                if created:
+                    logger.info("StatsBase:{} created -> {}".format(
+                        stats_base_record.name, stats_base_record.gold_value_per_amount))
 
     """
     バージョンをDBに登録する

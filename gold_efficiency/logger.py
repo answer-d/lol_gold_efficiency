@@ -2,8 +2,8 @@ from logging import getLogger
 from functools import wraps
 import inspect
 
-# logger = getLogger("default")
-logger = getLogger("debug")
+# logger = getLogger("debug")
+logger = getLogger("default")
 
 # logger.debug("debug")
 # logger.info("info")
@@ -14,7 +14,7 @@ logger = getLogger("debug")
 
 def logging(func):
     """メソッドに対して指定するデコレータ。対象メソッドの開始と終了をロギングする
-    ログレベルは「DEBUG」"""
+    ログレベルはDEBUG"""
     @wraps(func)
     def wrapper(*args, **kwargs):
         logger.debug("{}.{} start. args={}, kwargs={}".format(func.__module__, func.__qualname__, args, kwargs))
