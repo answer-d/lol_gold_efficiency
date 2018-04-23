@@ -2,6 +2,7 @@ import re
 import json
 from functools import reduce
 from django.db import models
+from .logger import *
 
 # Create your models here.
 
@@ -48,6 +49,7 @@ class Item(models.Model):
     def __str__(self):
         return self.name
 
+    @logging
     def get_gold_value(self, **kwargs):
         """アイテムの金銭価値を取得する"""
         # アイテムに紐づく効果の金銭価値を全て評価して足し合わせる
@@ -58,6 +60,7 @@ class Item(models.Model):
             gold_value = 0
         return gold_value
 
+    @logging
     def get_gold_efficiency(self, **kwargs):
         """アイテムの金銭効率を取得する"""
         try:
@@ -66,6 +69,7 @@ class Item(models.Model):
             gold_efficiency = 0
         return gold_efficiency
 
+    @logging
     def get_input_keys(self) -> list:
         """get_gold_value()を呼ぶ時に渡すべきキーのリストを返す"""
         keys_list = []
@@ -122,32 +126,35 @@ class Effect(models.Model):
     def __str__(self):
         return self.description
 
+    @logging
     def get_gold_value(self, **kwargs) -> float:
         """金銭価値を計算して返す"""
         required_keys = self.get_input_keys()
-        # print("{}({}) - is_evaluable?:{}".format(self.description, kwargs, self.is_evaluable(**kwargs)))
         if self.is_evaluable(**kwargs):
             formula = self.formula
             for k, v in kwargs.items():
-                # print("  kwargs処理 : {} - {}".format(self.description, k))
                 if k in required_keys and v:
-                    # print("    {}を{}にreplace".format(k, v))
+                    print("    {}を{}にreplace".format(k, v))
                     formula = formula.replace("{" + k + "}", v)
             for stats_base in self.item.patch_version.stats_base_set.all():
                 formula = formula.replace("[" + stats_base.name + "]", str(stats_base.gold_value_per_amount))
 
+            logger.debug("eval({})".format(formula))
             return eval(formula)
         else:
             return 0
 
+    @logging
     def get_min_gold_value(self):
         """金銭価値の最小値を取得する"""
         return self.get_gold_value(**json.loads(self.min_input))
 
+    @logging
     def get_max_gold_value(self):
         """金銭価値の最大値を取得する"""
         return self.get_gold_value(**json.loads(self.max_input))
 
+    @logging
     def get_input_keys(self) -> list:
         """get_gold_value()を呼ぶ時に渡すべきキーのリストを返す"""
         if self.formula is not None:
@@ -155,6 +162,7 @@ class Effect(models.Model):
         else:
             return []
 
+    @logging
     def get_stats_base_names(self) -> list:
         """formulaにかかれているStatsBaseの名前のリストを返す"""
         if self.formula is not None:
@@ -162,6 +170,7 @@ class Effect(models.Model):
         else:
             return []
 
+    @logging
     def is_evaluable(self, **kwargs) -> bool:
         """kwargsが与えられた時評価可能かどうかを返す"""
         if self.formula is not None:

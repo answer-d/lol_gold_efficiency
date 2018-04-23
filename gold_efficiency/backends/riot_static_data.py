@@ -8,34 +8,150 @@ from riotwatcher import RiotWatcher
 from ..models import PatchVersion, Item, StatsBase, Effect, Tag
 from .constant_values import *
 from .parsed_effect import ParsedEffect
+from ..logger import *
 
 
 class RiotStaticData(object):
-
     """
     コンストラクタ
     """
+    @logging
     def __init__(self, api_key=None, region="jp1", locale="ja_JP"):
         self.api_key = api_key
         self.region = region
         self.locale = locale
 
     """
+    itemsのjsonデータを指定されたバージョンとしてDBに登録する
+    """
+    @logging
+    def update_items(self, items, version):
+        version = PatchVersion.objects.get(version_str=version)
+
+        for id in tqdm(items["data"].keys()):
+            item = items["data"][id]
+
+            # サモリフ以外除外
+            if item["maps"][MAPID_SUMMONERS_RIFT] is False:
+                continue
+
+            # 対象のアイテムが登録されてたらスキップ
+            if Item.objects.filter(patch_version=version, riot_item_id=id).exists():
+                continue
+
+            # アイテム登録
+            item_data = self._parse_item(item, version)
+            item_record, created = Item.objects.update_or_create(**item_data)
+
+            if created:
+                logger.info("Item:{} - created".format(item_record.name))
+
+            # タグ登録
+            if "tags" in item:
+                for tag in item["tags"]:
+                    tag_record, _ = Tag.objects.get_or_create(name=tag)
+                    item_record.tags.add(tag_record)
+
+            # スタッツ/エフェクト登録
+            if "description" in item:
+                # パース
+                parsed_effects = self._parse_description(item["description"])
+
+                # EffectAmountの挿入
+                parsed_effects = [
+                    self._insert_effect_amount(effect, item)
+                    for effect in parsed_effects
+                ]
+
+                # 登録
+                for effect in parsed_effects:
+                    if effect.formula is None:
+                        is_checked_evaluation = False
+                    else:
+                        is_checked_evaluation = True
+                    effect_record, created = Effect.objects.update_or_create(
+                        description=effect.description,
+                        verbose_description=effect.verbose_description,
+                        is_unique=effect.is_unique,
+                        formula=effect.formula,
+                        name=effect.unique_name,
+                        is_updated_in_current_patch=False,
+                        is_checked_evaluation=is_checked_evaluation,
+                        item=item_record,
+                        calc_priority=1
+                    )
+
+                    if created:
+                        logger.info("Effect:{} created".format(
+                            "\\n".join(effect_record.description.splitlines())))
+
+        # effectの個別formula投入
+        # とりあえず入れるため用なので、いずれ消す予定
+        def _set_formula(effect_description, formula):
+            for effect in Effect.objects.filter(description__contains=effect_description):
+                effect.formula = formula
+                effect.save()
+                logger.debug("[{}] {} : {}".format(effect.item.name, effect_description, formula))
+
+        _set_formula("自動効果(重複不可) - 素早さ: このアイテムが追加で10%のクールダウン短縮を獲得。",
+                     "10 * [CooldownReduction]")
+        _set_formula("自動効果(重複不可) - 畏怖: 最大マナの3%に等しい魔力を得る。消費マナの25%を回復。",
+                     "{MAX_MANA} * 0.03 * [AbilityPower]")  # 更にambiguousにもしたい（消費マナの25%回復効果もあるので）
+        _set_formula("マナチャージ: マナ消費ごとに最大マナが8増加(最大750マナ)。この効果は12秒につき最大3回まで発生。",
+                     "{STACK} * 8 * [Mana]")
+        _set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが12増加(最大750マナ)。この効果は12秒につき最大3回まで発生。",
+                     "{STACK} * 12 * [Mana]")
+        _set_formula("自動効果(重複不可): 通常攻撃ごとに、攻撃速度 +8%、増加攻撃力 +4%、魔力 +4%を得る。効果は5秒間持続する(効果は最大6回までスタック)。",
+                     "{STACK} * ({AS} * 8 * [AttackSpeed] + {ADDITIONAL_AD} * 0.04 * [AttackDamage] + {AP} * 0.04 * [AbilityPower])")
+        _set_formula("発動効果(重複不可): 1チャージ消費して体力125とマナ75を12秒間かけて回復する。",
+                     "3 * (125 * [Health] + 75 * [Mana])")  # ambiguous
+        _set_formula("自動効果(重複不可): ユニット1体をキルするごとに物理防御と魔力がそれぞれ0.5増加する。この効果は最大30回までスタックする。",
+                     "{STACK} * 0.5 * ([Armor] + [AbilityPower])")
+        _set_formula("自動効果(重複不可) : ユニット1体をキルするごとに最大体力が5増加する。このボーナスは最大20回までスタックする。",
+                     "{STACK} * 5 * [Health]")
+        _set_formula("自動効果(重複不可) - ドレッド: 栄光1スタックごとに魔力3を得る。",
+                     "{STACK} * 3 * [AbilityPower]")
+        _set_formula("自動効果: 5秒毎に体力を6回復。",
+                     "6 * [HealthRegeneration]")
+        _set_formula("自動効果(重複不可) - 畏怖: 最大マナの2%に等しい増加攻撃力を得る。消費マナの15%を回復。",
+                     "{MAX_MANA} * 0.02 * [AttackDamage]")
+        _set_formula("自動効果(重複不可) - マナチャージ: 通常攻撃かマナを消費するごとに最大マナが5増加(最大750マナ)。この効果は12秒につき最大3回まで発生する。",
+                     "{STACK} * 5 * [Mana]")
+        _set_formula("自動効果(重複不可) - マナチャージ: 通常攻撃かマナを消費するごとに最大マナが6増加(最大750マナ)。この効果は12秒につき最大3回まで発生する。",
+                     "{STACK} * 6 * [Mana]")
+        _set_formula("自動効果(重複不可) - 調和: 基本マナ自動回復の上昇率が、基本体力自動回復の上昇率にも適用される。",
+                     "{MANA_REG_MOD} * [HealthRegeneration]")
+        _set_formula("自動効果(重複不可) - ドレッド: 栄光1スタックごとに5の魔力を得る。栄光スタックが15以上になると、移動速度が10%増加する。",
+                     "{STACK} * 5 * [AbilityPower] + {STACK}//15 * 10 * [PercentMovementSpeed]")
+        _set_formula("自動効果(重複不可) : 魔力を40%増加させる。",
+                     "{AP} * 0.4 * [AbilityPower]")
+        _set_formula("自動効果: 1スタックごとに体力 +20、マナ +10、魔力 +4を獲得 (最大で体力 +200、マナ +100、魔力 +40)。1分ごとに1スタックを獲得 (最大10スタック)。",
+                     "{STACK} * (20 * [Health] + 10 * [Mana] + 4 * [AbilityPower])")
+        _set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが4増加(12秒につき最大3回まで)。",
+                     "{STACK} * 4 * [Mana]")
+        _set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが6増加(12秒につき最大3回まで)。",
+                     "{STACK} * 6 * [Mana]")
+        _set_formula("発動効果(重複不可) : 1チャージ消費して体力125を12秒間かけて回復する。最大2チャージで、ショップを訪れることで補充できる。",
+                     "2 * (125 * [Health])")
+
+    """
     StatsBaseを計算して、指定されたバージョンとしてDBに登録する
     """
+    @logging
     def update_stats_base(self, items, version):
         version = PatchVersion.objects.get(version_str=version)
 
         # 金銭効率ベースになるアイテムをtier順に処理
         for base_items in BASE_ITEMS_LIST:
             for key, value in base_items.items():
-                if StatsBase.objects.filter(patch_version=version, name=key).exists():
-                    continue
-
                 item = items['data'][value]
 
                 # サモリフ以外除外
                 if item["maps"][MAPID_SUMMONERS_RIFT] is False:
+                    continue
+
+                # 既に登録されてるStatsBaseだったらスキップ
+                if StatsBase.objects.filter(patch_version=version, name=key).exists():
                     continue
 
                 # アイテムデータの取得
@@ -63,134 +179,30 @@ class RiotStaticData(object):
                             del all_stats[stats_name]
 
                 # キー一致してるかチェック
-                # TODO : エラー処理
                 if key not in all_stats.keys():
-                    print("＼(^o^)／ｵﾜﾀ")
+                    logger.error("＼(^o^)／ｵﾜﾀ")
                     break
 
                 # 金銭効率ベースの計算
                 gold_value_per_amount = valuation_gold / int(all_stats[key])
 
                 # DB登録
-                StatsBase.objects.update_or_create(
+                stats_base_record, created = StatsBase.objects.update_or_create(
                     name=key,
                     gold_value_per_amount=gold_value_per_amount,
                     patch_version=version
                 )
 
-    """
-    itemsのjsonデータを指定されたバージョンとしてDBに登録する
-    """
-    def update_items(self, items, version):
-        version = PatchVersion.objects.get(version_str=version)
-
-        # StatsBaseが登録されてなかったら先に登録する
-        if not StatsBase.objects.filter(patch_version=version).exists():
-            self.update_stats_base(items, version)
-
-        for id in tqdm(items["data"].keys()):
-            item = items["data"][id]
-
-            # サモリフ以外除外
-            if item["maps"][MAPID_SUMMONERS_RIFT] is False:
-                continue
-
-            # アイテム登録
-            if not Item.objects.filter(patch_version=version, riot_item_id=id).exists():
-                item_data = self._parse_item(item, version)
-                item_record, _ = Item.objects.update_or_create(**item_data)
-
-                # タグ登録
-                if "tags" in item:
-                    for tag in item["tags"]:
-                        Tag.objects.update_or_create(
-                            name=tag,
-                        )
-                        item_record.tags.add(Tag.objects.get(name=tag))
-
-                # スタッツ/エフェクト登録
-                if "description" in item:
-                    # パース
-                    parsed_effects = self._parse_description(item["description"])
-
-                    # EffectAmountの挿入
-                    parsed_effects = [
-                        self._insert_effect_amount(effect, item)
-                        for effect in parsed_effects
-                    ]
-
-                    # 登録
-                    for effect in parsed_effects:
-                        if effect.formula is None:
-                            is_checked_evaluation = False
-                        else:
-                            is_checked_evaluation = True
-                        Effect.objects.update_or_create(
-                            description=effect.description,
-                            verbose_description=effect.verbose_description,
-                            is_unique=effect.is_unique,
-                            formula=effect.formula,
-                            name=effect.unique_name,
-                            is_updated_in_current_patch=False,
-                            is_checked_evaluation=is_checked_evaluation,
-                            item=item_record,
-                            calc_priority=1
-                        )
-
-        # effectの個別formula投入
-        # とりあえず入れるため用なので、いずれ消す予定
-        self._set_formula("自動効果(重複不可) - 素早さ: このアイテムが追加で10%のクールダウン短縮を獲得。",
-                          "10 * [CooldownReduction]")
-        self._set_formula("自動効果(重複不可) - 畏怖: 最大マナの3%に等しい魔力を得る。消費マナの25%を回復。",
-                          "{MAX_MANA} * 0.03 * [AbilityPower]")  # 更にambiguousにもしたい（消費マナの25%回復効果もあるので）
-        self._set_formula("マナチャージ: マナ消費ごとに最大マナが8増加(最大750マナ)。この効果は12秒につき最大3回まで発生。",
-                          "{STACK} * 8 * [Mana]")
-        self._set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが12増加(最大750マナ)。この効果は12秒につき最大3回まで発生。",
-                          "{STACK} * 12 * [Mana]")
-        self._set_formula("自動効果(重複不可): 通常攻撃ごとに、攻撃速度 +8%、増加攻撃力 +4%、魔力 +4%を得る。効果は5秒間持続する(効果は最大6回までスタック)。",
-                          "{STACK} * ({AS} * 8 * [AttackSpeed] + {ADDITIONAL_AD} * 0.04 * [AttackDamage] + {AP} * 0.04 * [AbilityPower])")
-        self._set_formula("発動効果(重複不可): 1チャージ消費して体力125とマナ75を12秒間かけて回復する。",
-                          "3 * (125 * [Health] + 75 * [Mana])")  # ambiguous
-        self._set_formula("自動効果(重複不可): ユニット1体をキルするごとに物理防御と魔力がそれぞれ0.5増加する。この効果は最大30回までスタックする。",
-                          "{STACK} * 0.5 * ([Armor] + [AbilityPower])")
-        self._set_formula("自動効果(重複不可) : ユニット1体をキルするごとに最大体力が5増加する。このボーナスは最大20回までスタックする。",
-                          "{STACK} * 5 * [Health]")
-        self._set_formula("自動効果(重複不可) - ドレッド: 栄光1スタックごとに魔力3を得る。",
-                          "{STACK} * 3 * [AbilityPower]")
-        self._set_formula("自動効果: 5秒毎に体力を6回復。",
-                          "6 * [HealthRegeneration]")
-        self._set_formula("自動効果(重複不可) - 畏怖: 最大マナの2%に等しい増加攻撃力を得る。消費マナの15%を回復。",
-                          "{MAX_MANA} * 0.02 * [AttackDamage]")
-        self._set_formula("自動効果(重複不可) - マナチャージ: 通常攻撃かマナを消費するごとに最大マナが5増加(最大750マナ)。この効果は12秒につき最大3回まで発生する。",
-                          "{STACK} * 5 * [Mana]")
-        self._set_formula("自動効果(重複不可) - マナチャージ: 通常攻撃かマナを消費するごとに最大マナが6増加(最大750マナ)。この効果は12秒につき最大3回まで発生する。",
-                          "{STACK} * 6 * [Mana]")
-        self._set_formula("自動効果(重複不可) - 調和: 基本マナ自動回復の上昇率が、基本体力自動回復の上昇率にも適用される。",
-                          "{MANA_REG_MOD} * [HealthRegeneration]")
-        self._set_formula("自動効果(重複不可) - ドレッド: 栄光1スタックごとに5の魔力を得る。栄光スタックが15以上になると、移動速度が10%増加する。",
-                          "{STACK} * 5 * [AbilityPower] + {STACK}//15 * 10 * [PercentMovementSpeed]")
-        self._set_formula("自動効果(重複不可) : 魔力を40%増加させる。",
-                          "{AP} * 0.4 * [AbilityPower]")
-        self._set_formula("自動効果: 1スタックごとに体力 +20、マナ +10、魔力 +4を獲得 (最大で体力 +200、マナ +100、魔力 +40)。1分ごとに1スタックを獲得 (最大10スタック)。",
-                          "{STACK} * (20 * [Health] + 10 * [Mana] + 4 * [AbilityPower])")
-        self._set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが4増加(12秒につき最大3回まで)。",
-                          "{STACK} * 4 * [Mana]")
-        self._set_formula("自動効果(重複不可) - マナチャージ: マナ消費ごとに最大マナが6増加(12秒につき最大3回まで)。",
-                          "{STACK} * 6 * [Mana]")
-        self._set_formula("発動効果(重複不可) : 1チャージ消費して体力125を12秒間かけて回復する。最大2チャージで、ショップを訪れることで補充できる。",
-                          "2 * (125 * [Health])")
-
-    @staticmethod
-    def _set_formula(effect_description, formula):
-        for effect in Effect.objects.filter(description__contains=effect_description):
-            effect.formula = formula
-            effect.save()
-            print("[{}] {} : {}".format(effect.item.name, effect_description, formula))
+                if created:
+                    logger.info("StatsBase:{} created -> {}".format(
+                        stats_base_record.name, stats_base_record.gold_value_per_amount))
 
     """
     バージョンをDBに登録する
     """
-    def update_versions(self, versions):
+    @staticmethod
+    @logging
+    def update_versions(versions):
         if not isinstance(versions, list):
             versions = [versions]
 
@@ -200,6 +212,7 @@ class RiotStaticData(object):
     """
     利用可能なバージョンをString Listとして取得する
     """
+    @logging
     def fetch_patch_versions(self):
         watcher = RiotWatcher(self.api_key)
         return watcher.static_data.versions(self.region)
@@ -207,6 +220,7 @@ class RiotStaticData(object):
     """
     対象verのitemsを取得する
     """
+    @logging
     def fetch_items(self, version):
         watcher = RiotWatcher(self.api_key)
         return watcher.static_data.items(
@@ -219,8 +233,9 @@ class RiotStaticData(object):
     """
     ローカルファイルから読み込み
     """
-    @classmethod
-    def load_from_json(self, json_path):
+    @staticmethod
+    @logging
+    def load_from_json(json_path):
         with open(json_path, "r", encoding="utf-8") as fp:
             data = json.load(fp)
         return data

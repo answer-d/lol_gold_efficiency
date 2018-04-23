@@ -1,14 +1,17 @@
 from django.shortcuts import render
 from .models import PatchVersion, Item
 from .forms import ItemInputKeysForm
+from .logger import *
 
 # Create your views here.
 
 
+@logging
 def index(request):
     return render(request, 'gold_efficiency/index.html')
 
 
+@logging
 def itemlist(request):
     patch_version = PatchVersion.objects.order_by("-version_str").first()
     item_list = patch_version.item_set.all()
@@ -21,6 +24,7 @@ def itemlist(request):
     return render(request, 'gold_efficiency/itemlist.html', context)
 
 
+@logging
 def itemdetail(request, item_id):
     item = Item.objects.get(pk=item_id)
     form = ItemInputKeysForm(item, request.GET)

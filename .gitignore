@@ -13,3 +13,7 @@ db.sqlite3-journal
 
 # atom-ide
 .ropeproject/
+
+# this project
+django.log
+django_debug.log

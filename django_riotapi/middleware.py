@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.conf import settings
 import base64
+from gold_efficiency.logger import *
 
 
 class BasicAuthMiddleware(object):
@@ -23,6 +24,7 @@ class BasicAuthMiddleware(object):
         return response
 
     @staticmethod
+    @logging
     def unauthed():
         response = HttpResponse("""<html><title>Auth required</title><body>
         <h1>Authorization Required</h1></body></html""")
@@ -30,6 +32,7 @@ class BasicAuthMiddleware(object):
         response.status_code = 401
         return response
 
+    @logging
     def process_request(self, request):
         if settings.BASICAUTH_USERNAME is not None:
             if 'HTTP_AUTHORIZATION' not in request.META:

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 import os
 import django_heroku
 
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -125,6 +126,61 @@ STATIC_URL = '/static/'
 # Herokuデビュー
 django_heroku.settings(locals())
 
+# ログレベル設定を環境変数から拾う(環境変数がなかったらINFOとする)
+DJANGO_LOG_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+
+# logger設定
+LOGGING = {
+    'version': 1,  # 固定
+    'formatters': {  # 出力フォーマットの指定
+        'all': {  # 'all'という名前の出力フォーマット定義
+            'format': " ".join([
+                "%(asctime)s",
+                # "%(pathname)s %(funcName)s(%(lineno)d)",
+                "%(module)s.%(funcName)s(%(lineno)d)",
+                "%(process)d:%(processName)s",
+                "%(thread)d:%(threadName)s",
+                "[%(levelname)s] %(message)s",
+            ])
+        },
+        'simple': {
+            'format': "%(levelname)s %(message)s"
+        },
+    },
+    'handlers': {  # ログの出し方の設定
+        'file': {  # 'file'という名前のログ出力設定、ファイル書き出し
+            'level': 'ERROR',  # ERROR以上のみ(ログ流れ防止目的)。TODO: herokuでファイル書き出しできるか要確認
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django.log'),
+            'formatter': 'all',  # 上で定義した出力フォーマット
+        },
+        'console': {  # こっちは標準出力書き出し
+            'level': 'DEBUG',  # DEBUG以上
+            'class': 'logging.StreamHandler',
+            'formatter': 'all',
+        },
+        'file_debug': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'django_debug.log'),
+            'formatter': 'all'
+        },
+    },
+    'loggers': {  # どんなloggerがあるかの設定
+        'default': {  # 'default'という名前のlogger定義
+            'handlers': ['file', 'console'],  # 上で定義したやつ
+            'level': DJANGO_LOG_LEVEL,  # どのログレベルから出すか
+        },
+        'debug': {
+            'handlers': ['file', 'file_debug', 'console'],
+            'level': 'DEBUG',
+        },
+    },
+}
+
 # Basic認証用アカウント/パスを環境変数から拾う
-BASICAUTH_USERNAME = os.environ['BASICAUTH_USERNAME'] if 'BASICAUTH_USERNAME' in os.environ else None
-BASICAUTH_PASSWORD = os.environ['BASICAUTH_PASSWORD'] if 'BASICAUTH_PASSWORD' in os.environ else None
+BASICAUTH_USERNAME = os.getenv('BASICAUTH_USERNAME')
+BASICAUTH_PASSWORD = os.getenv('BASICAUTH_PASSWORD')
+
+# RiotAPIキーを環境変数から拾う
+RIOT_API_KEY = os.getenv('RIOT_API_KEY')

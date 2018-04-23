@@ -1,7 +1,9 @@
 from django import forms
+from .logger import *
 
 
 class ItemInputKeysForm(forms.Form):
+    @logging
     def __init__(self, item, *args, **kwargs):
         super(ItemInputKeysForm, self).__init__(*args, **kwargs)
 
